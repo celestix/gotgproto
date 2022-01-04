@@ -1,0 +1,5 @@
+*.exe
+*.session
+test/
+.idea
+vendor/
