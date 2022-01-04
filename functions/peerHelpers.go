@@ -7,30 +7,30 @@ import (
 )
 
 func GetChatIdFromPeer(peer tg.PeerClass) int64 {
-	switch peer.(type) {
+	switch peer := peer.(type) {
 	case *tg.PeerChannel:
-		return peer.(*tg.PeerChannel).ChannelID
+		return peer.ChannelID
 	case *tg.PeerUser:
-		return peer.(*tg.PeerUser).UserID
+		return peer.UserID
 	case *tg.PeerChat:
-		return peer.(*tg.PeerChat).ChatID
+		return peer.ChatID
 	default:
 		return 0
 	}
 }
 
 func GetChatFromPeer(ctx context.Context, client *tg.Client, peer tg.PeerClass) (*tg.ChatFull, error) {
-	switch peer.(type) {
+	switch peer := peer.(type) {
 	case *tg.PeerChannel:
 		chat, err := client.ChannelsGetFullChannel(ctx, &tg.InputChannel{
-			ChannelID: peer.(*tg.PeerChannel).ChannelID,
+			ChannelID: peer.ChannelID,
 		})
 		if err != nil {
 			return nil, err
 		}
 		return chat.FullChat.(*tg.ChatFull), nil
 	case *tg.PeerChat:
-		chat, err := client.MessagesGetFullChat(ctx, peer.(*tg.PeerChat).ChatID)
+		chat, err := client.MessagesGetFullChat(ctx, peer.ChatID)
 		if err != nil {
 			return nil, err
 		}

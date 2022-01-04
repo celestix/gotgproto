@@ -7,8 +7,6 @@ import (
 	"github.com/gotd/td/session"
 )
 
-// NOT IMPLEMENTED
-
 type SessionName struct {
 	name        string
 	sessionType SessionType
