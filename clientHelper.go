@@ -11,7 +11,6 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"log"
 )
 
 var (
@@ -31,6 +30,7 @@ type ClientHelper struct {
 	Logger     *zap.Logger
 }
 
+// StartClient is the helper for gotd/td which creates client, runs it, prepares storage etc.
 func StartClient(c ClientHelper) {
 	var sessionStorage telegram.SessionStorage
 	if c.Session.GetName() == ":memory:" {
@@ -91,13 +91,9 @@ func (ch ClientHelper) CreateClient(ctx context.Context, opts telegram.Options,
 				}
 			}
 		}
-
 		Self, _ = client.Self(ctx)
-		log.Println("[BOT][MAIN] Filled Self Data")
 		Api = tg.NewClient(client)
-		log.Println("[BOT][MAIN] Created Client Api")
 		Sender = message.NewSender(Api)
-		log.Println("[BOT][CLIENT] Started Client")
 		if ch.Session.GetName() == "" {
 			storage.Load("new.session")
 		}

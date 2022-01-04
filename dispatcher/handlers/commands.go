@@ -6,26 +6,33 @@ import (
 	"strings"
 )
 
+// Command handler is executed when the update consists of tg.Message provided it is a command and satisfies all the conditions.
 type Command struct {
 	Prefix        []rune
 	Name          string
 	Callback      CallbackResponse
+	Outgoing      bool
 	UpdateFilters filters.UpdateFilter
 }
 
+// DefaultPrefix is the global variable consisting all the prefixes which will trigger the command.
 var DefaultPrefix = []rune{'!', '/'}
 
+// NewCommand creates a new Command handler with default fields, bound to call its response
 func NewCommand(name string, response CallbackResponse) Command {
 	return Command{
-		Name:          name,
-		Callback:      response,
-		Prefix:        DefaultPrefix,
-		UpdateFilters: nil,
+		Name:     name,
+		Callback: response,
+		Prefix:   DefaultPrefix,
+		Outgoing: true,
 	}
 }
 
 func (c Command) CheckUpdate(ctx *ext.Context, u *ext.Update) error {
-	if u.EffectiveMessage == nil || u.EffectiveMessage.Out || len(u.EffectiveMessage.Message) == 0 {
+	if u.EffectiveMessage == nil || len(u.EffectiveMessage.Message) == 0 {
+		return nil
+	}
+	if !c.Outgoing && u.EffectiveMessage.Out {
 		return nil
 	}
 	if c.UpdateFilters != nil && !c.UpdateFilters(u) {

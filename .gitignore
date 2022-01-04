@@ -1,5 +1,6 @@
 *.exe
 *.session
+examples/**/*.session
 test/
 .idea/
 vendor/

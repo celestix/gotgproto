@@ -5,12 +5,14 @@ import (
 	"github.com/anonyindian/gotgproto/ext"
 )
 
+// InlineQuery handler is executed when the update consists of tg.UpdateInlineBotCallbackQuery.
 type InlineQuery struct {
 	Callback      CallbackResponse
 	Filters       filters.InlineQueryFilter
 	UpdateFilters filters.UpdateFilter
 }
 
+// NewInlineQuery creates a new InlineQuery handler bound to call its response.
 func NewInlineQuery(filters filters.InlineQueryFilter, response CallbackResponse) InlineQuery {
 	return InlineQuery{
 		Filters:       filters,

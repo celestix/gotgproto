@@ -2,10 +2,12 @@ package handlers
 
 import "github.com/anonyindian/gotgproto/ext"
 
+// AnyUpdate handler is executed on all type of incoming updates.
 type AnyUpdate struct {
 	Callback CallbackResponse
 }
 
+// NewAnyUpdate creates a new AnyUpdate handler bound to call its response.
 func NewAnyUpdate(response CallbackResponse) AnyUpdate {
 	return AnyUpdate{Callback: response}
 }

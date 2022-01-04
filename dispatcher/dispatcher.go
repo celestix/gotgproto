@@ -14,21 +14,29 @@ import (
 )
 
 var (
-	EndGroups        = errors.New("stopped")
-	ContinueGroups   = errors.New("continued")
+	// EndGroups stops iterating over handlers groups if return through handler callback function.
+	EndGroups = errors.New("stopped")
+	// ContinueGroups continues iterating over handlers groups if return through handler callback function.
+	ContinueGroups = errors.New("continued")
+	// SkipCurrentGroup skips current group and continues iterating over handlers groups if return through handler callback function.
 	SkipCurrentGroup = errors.New("skipped")
 )
 
 type CustomDispatcher struct {
-	Panic         PanicHandler
-	Error         ErrorHandler
-	handlerMap    map[int][]Handler
+	// Panic handles all the panics that occur during handler execution.
+	Panic PanicHandler
+	// Error handles all the unknown errors which are returned by the handler callback functions.
+	Error ErrorHandler
+	// handlerMap is used for internal functionality of CustomDispatcher.
+	handlerMap map[int][]Handler
+	// handlerGroups is used for internal functionality of CustomDispatcher.
 	handlerGroups []int
 }
 
 type PanicHandler func(*ext.Context, *ext.Update, string)
 type ErrorHandler func(*ext.Context, *ext.Update, string) error
 
+// MakeDispatcher creates new custom dispatcher which process and handles incoming updates.
 func MakeDispatcher() *CustomDispatcher {
 	return &CustomDispatcher{
 		handlerMap: make(map[int][]Handler),
@@ -44,6 +52,7 @@ func (u *entities) short() {
 	u.Channels = make(map[int64]*tg.Channel, 0)
 }
 
+// Handle function handles all the incoming updates, map entities and dispatches updates for further handling.
 func (dp *CustomDispatcher) Handle(ctx context.Context, updates tg.UpdatesClass) error {
 	var (
 		e    entities
@@ -74,10 +83,6 @@ func (dp *CustomDispatcher) Handle(ctx context.Context, updates tg.UpdatesClass)
 		upds = []tg.UpdateClass{u.Update}
 		e.short()
 	default:
-		// *UpdateShortMessage
-		// *UpdateShortChatMessage
-		// *UpdateShortSentMessage
-		// *UpdatesTooLong
 		return nil
 	}
 

@@ -5,6 +5,21 @@ import (
 	"github.com/gotd/td/tg"
 )
 
+// Update contains all the data related to an update.
+type Update struct {
+	// EffectiveMessage is the tg.Message of current update.
+	EffectiveMessage *tg.Message
+	// CallbackQuery is the tg.UpdateBotCallbackQuery of current update.
+	CallbackQuery *tg.UpdateBotCallbackQuery
+	// InlineQuery is the tg.UpdateInlineBotCallbackQuery of current update.
+	InlineQuery *tg.UpdateInlineBotCallbackQuery
+	// UpdateClass is the current update in raw form.
+	UpdateClass tg.UpdateClass
+	// Entities of a update, i.e. mapped users, chats and channels.
+	Entities *tg.Entities
+}
+
+// GetNewUpdate creates a new Update with provided parameters.
 func GetNewUpdate(e *tg.Entities, update tg.UpdateClass) *Update {
 	u := &Update{
 		UpdateClass: update,
@@ -24,14 +39,7 @@ func GetNewUpdate(e *tg.Entities, update tg.UpdateClass) *Update {
 	return u
 }
 
-type Update struct {
-	EffectiveMessage *tg.Message
-	CallbackQuery    *tg.UpdateBotCallbackQuery
-	InlineQuery      *tg.UpdateInlineBotCallbackQuery
-	UpdateClass      tg.UpdateClass
-	Entities         *tg.Entities
-}
-
+// EffectiveUser returns the tg.User who is responsible for the update.
 func (u *Update) EffectiveUser() *tg.User {
 	if u.Entities == nil {
 		return nil
@@ -42,6 +50,9 @@ func (u *Update) EffectiveUser() *tg.User {
 		uId, ok := u.EffectiveMessage.FromID.(*tg.PeerUser)
 		if !ok {
 			for _, user := range u.Entities.Users {
+				if user.Self && user.Bot {
+					return nil
+				}
 				return user
 			}
 		}
@@ -54,6 +65,7 @@ func (u *Update) EffectiveUser() *tg.User {
 	return u.Entities.Users[userId]
 }
 
+// GetChat returns the responsible tg.Chat for the current update.
 func (u *Update) GetChat() *tg.Chat {
 	if u.Entities == nil {
 		return nil
@@ -77,6 +89,7 @@ func (u *Update) GetChat() *tg.Chat {
 	return u.Entities.Chats[c.ChatID]
 }
 
+// GetChannel returns the responsible tg.Channel for the current update.
 func (u *Update) GetChannel() *tg.Channel {
 	if u.Entities == nil {
 		return nil
@@ -100,6 +113,7 @@ func (u *Update) GetChannel() *tg.Channel {
 	return u.Entities.Channels[c.ChannelID]
 }
 
+// EffectiveChat returns the responsible tg.ChatClass for the current update.
 func (u *Update) EffectiveChat() tg.ChatClass {
 	if c := u.GetChannel(); c != nil {
 		return c

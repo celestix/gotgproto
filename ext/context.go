@@ -10,14 +10,21 @@ import (
 	"time"
 )
 
+// Context consists of context.Context, tg.Client, Self etc.
 type Context struct {
+	// original context of an update.
 	OriginContext context.Context
-	Client        *tg.Client
-	Self          *tg.User
-	Sender        *message.Sender
-	Entities      *tg.Entities
+	// tg client which will be used make send requests.
+	Client *tg.Client
+	// self user who authorized the session.
+	Self *tg.User
+	// Sender is a message sending helper.
+	Sender *message.Sender
+	// Entities consists of mapped users, chats and channels from the update.
+	Entities *tg.Entities
 }
 
+// NewContext creates a new Context object with provided parameters.
 func NewContext(ctx context.Context, client *tg.Client, self *tg.User, sender *message.Sender, entities *tg.Entities) *Context {
 	return &Context{
 		OriginContext: ctx,
@@ -28,12 +35,17 @@ func NewContext(ctx context.Context, client *tg.Client, self *tg.User, sender *m
 	}
 }
 
+// ReplyOpts object contains optional parameters for Context.Reply.
 type ReplyOpts struct {
-	NoWebpage        bool
+	// Whether the message should show link preview or not.
+	NoWebpage bool
+	// Reply markup of a message, i.e. inline keyboard buttons etc.
 	Markup           tg.ReplyMarkupClass
 	ReplyToMessageId int
 }
 
+// Reply uses given message update to create message for same chat and create a reply.
+// Parameter 'text' interface should be one from string or an array of styling.StyledTextOption.
 func (ctx *Context) Reply(upd *Update, text interface{}, opts *ReplyOpts) (tg.UpdatesClass, error) {
 	if text == nil {
 		return nil, ErrTextEmpty
@@ -61,6 +73,7 @@ func (ctx *Context) Reply(upd *Update, text interface{}, opts *ReplyOpts) (tg.Up
 	}
 }
 
+// SendMessage invokes method messages.sendMessage#d9d75a4 returning error if any.
 func (ctx *Context) SendMessage(chatId int64, request tg.MessagesSendMessageRequest) (tg.UpdatesClass, error) {
 	request.RandomID = time.Now().UnixNano()
 	if request.Peer == nil {
@@ -69,6 +82,7 @@ func (ctx *Context) SendMessage(chatId int64, request tg.MessagesSendMessageRequ
 	return ctx.Client.MessagesSendMessage(ctx.OriginContext, &request)
 }
 
+// SendMedia invokes method messages.sendMedia#e25ff8e0 returning error if any. Send a media
 func (ctx *Context) SendMedia(chatId int64, request *tg.MessagesSendMediaRequest) (tg.UpdatesClass, error) {
 	request.RandomID = time.Now().UnixNano()
 	if request.Peer == nil {
@@ -77,6 +91,7 @@ func (ctx *Context) SendMedia(chatId int64, request *tg.MessagesSendMediaRequest
 	return ctx.Client.MessagesSendMedia(ctx.OriginContext, request)
 }
 
+// SendInlineBotResult invokes method messages.sendInlineBotResult#7aa11297 returning error if any. Send a result obtained using messages.getInlineBotResults¹.
 func (ctx *Context) SendInlineBotResult(chatId int64, request *tg.MessagesSendInlineBotResultRequest) (tg.UpdatesClass, error) {
 	request.RandomID = time.Now().UnixNano()
 	if request.Peer == nil {
@@ -85,6 +100,7 @@ func (ctx *Context) SendInlineBotResult(chatId int64, request *tg.MessagesSendIn
 	return ctx.Client.MessagesSendInlineBotResult(ctx.OriginContext, request)
 }
 
+// SendReaction invokes method messages.sendReaction#25690ce4 returning error if any.
 func (ctx *Context) SendReaction(chatId int64, request *tg.MessagesSendReactionRequest) (tg.UpdatesClass, error) {
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
@@ -92,6 +108,7 @@ func (ctx *Context) SendReaction(chatId int64, request *tg.MessagesSendReactionR
 	return ctx.Client.MessagesSendReaction(ctx.OriginContext, request)
 }
 
+// SendMultiMedia invokes method messages.sendMultiMedia#f803138f returning error if any. Send an album or grouped media¹
 func (ctx *Context) SendMultiMedia(chatId int64, request *tg.MessagesSendMultiMediaRequest) (tg.UpdatesClass, error) {
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
@@ -99,6 +116,7 @@ func (ctx *Context) SendMultiMedia(chatId int64, request *tg.MessagesSendMultiMe
 	return ctx.Client.MessagesSendMultiMedia(ctx.OriginContext, request)
 }
 
+// GetChat returns tg.ChatFullClass of the provided chat id.
 func (ctx *Context) GetChat(chatId int64) (tg.ChatFullClass, error) {
 	peer := storage.GetPeerById(chatId)
 	if peer.ID == 0 {
@@ -124,6 +142,7 @@ func (ctx *Context) GetChat(chatId int64) (tg.ChatFullClass, error) {
 	return nil, ErrNotChat
 }
 
+// GetUser returns tg.UserFull of the provided user id.
 func (ctx *Context) GetUser(userId int64) (*tg.UserFull, error) {
 	peer := storage.GetPeerById(userId)
 	if peer.ID == 0 {
@@ -143,6 +162,14 @@ func (ctx *Context) GetUser(userId int64) (*tg.UserFull, error) {
 	}
 }
 
+// ExportSessionString returns session of authorized account in the form of string.
+// Note: This session string can be used to log back in with the help of gotgproto.
+// Check sessionMaker.SessionType for more information about it.
 func (ctx *Context) ExportSessionString() (string, error) {
 	return functions.EncodeSessionToString(storage.GetSession())
+}
+
+// AnswerCallback invokes method messages.setBotCallbackAnswer#d58f130a returning error if any. Set the callback answer to a user button press
+func (ctx *Context) AnswerCallback(request *tg.MessagesSetBotCallbackAnswerRequest) (bool, error) {
+	return ctx.Client.MessagesSetBotCallbackAnswer(ctx.OriginContext, request)
 }

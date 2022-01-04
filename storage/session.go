@@ -13,6 +13,7 @@ func UpdateSession(session *Session) {
 	tx.Commit()
 }
 
+// GetSession returns the session saved in storage.
 func GetSession() *Session {
 	session := &Session{}
 	SESSION.Model(&Session{}).Find(&session)

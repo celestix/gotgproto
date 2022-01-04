@@ -31,6 +31,7 @@ func AddPeer(iD, accessHash int64, peerType int, userName string) {
 	}
 }
 
+// GetPeerById finds the provided id in the peer storage and return it if found.
 func GetPeerById(iD int64) *Peer {
 	if StoreInMemory {
 		peer := PeerMemoryMap[iD]
@@ -45,6 +46,7 @@ func GetPeerById(iD int64) *Peer {
 	}
 }
 
+// GetPeerByUsername finds the provided username in the peer storage and return it if found.
 func GetPeerByUsername(username string) *Peer {
 	if StoreInMemory {
 		for key, peer := range PeerMemoryMap {
