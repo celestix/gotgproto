@@ -3,6 +3,7 @@ package filters
 import (
 	"github.com/anonyindian/gotgproto/functions"
 	"github.com/gotd/td/tg"
+	"regexp"
 )
 
 // All returns true on every type of tg.Message update.
@@ -20,6 +21,19 @@ func Chat(chatId int64) MessageFilter {
 // Text returns true if tg.Message consists of text.
 func Text(m *tg.Message) bool {
 	return len(m.Message) > 0
+}
+
+func Regex(r_string string) (m *tg.Message) bool {
+	r , err := regexp.Compile(r_string)
+	if err != nil {
+		panic(err)
+	}
+	
+	return func(msg *tg.Message) bool {
+		return r.MatchString(msg.Message)
+	}
+	
+
 }
 
 // Media returns true if tg.Message consists of media.
