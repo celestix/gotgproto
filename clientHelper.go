@@ -14,20 +14,31 @@ import (
 )
 
 var (
-	Self   *tg.User
-	Api    *tg.Client
+	// Self is the global variable for the authorized user.
+	Self *tg.User
+	// Api is the global variable for the tg.Client which is used to make the raw function calls.
+	Api *tg.Client
+	// Sender is the global variable for message sending helper.
 	Sender *message.Sender
 )
 
 type ClientHelper struct {
-	AppID      int
-	ApiHash    string
-	Session    *sessionMaker.SessionName
-	BotToken   string
-	Phone      string
+	// Unique Telegram Application ID, get it from https://my.telegram.org/apps.
+	AppID int
+	// Unique Telegram API Hash, get it from https://my.telegram.org/apps.
+	ApiHash string
+	// Session info of the authenticated user, use sessionMaker.NewSession function to fill this field.
+	Session *sessionMaker.SessionName
+	// BotToken is the unique API Token for the bot you're trying to authorize, get it from @BotFather.
+	BotToken string
+	// Mobile number of the authenticating user.
+	Phone string
+	// Dispatcher handlers the incoming updates and execute mapped handlers. It is recommended to use dispatcher.MakeDispatcher function for this field.
 	Dispatcher telegram.UpdateHandler
-	TaskFunc   func(ctx context.Context, client *telegram.Client) error
-	Logger     *zap.Logger
+	// TaskFunc is used to for all your post authorization function calls and setting up handlers, check examples for further help.
+	TaskFunc func(ctx context.Context, client *telegram.Client) error
+	// A Logger provides fast, leveled, structured logging. All methods are safe for concurrent use.
+	Logger *zap.Logger
 }
 
 // StartClient is the helper for gotd/td which creates client, runs it, prepares storage etc.
