@@ -26,7 +26,7 @@ func Text(m *tg.Message) bool {
 func Regex(r_string string) (m *tg.Message) bool {
 	r , err := regexp.Compile(r_string)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 	
 	return func(msg *tg.Message) bool {
