@@ -23,15 +23,17 @@ func Text(m *tg.Message) bool {
 	return len(m.Message) > 0
 }
 
-func Regex(r_string string) (m *tg.Message) bool {
+func Regex(r_string string) (MessageFilter , error) {
 	r , err := regexp.Compile(r_string)
 	if err != nil {
-		fmt.Println(err)
+		return func (msg tg.Message) bool {
+			return false
+		},err
 	}
 	
 	return func(msg *tg.Message) bool {
-		return r.MatchString(msg.Message)
-	}
+		return bool(r.MatchString(msg.Message)) 
+	},nil
 	
 
 }
