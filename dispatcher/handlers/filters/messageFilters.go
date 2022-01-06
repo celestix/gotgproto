@@ -23,6 +23,7 @@ func Text(m *tg.Message) bool {
 	return len(m.Message) > 0
 }
 
+// Regex Filter For Messages, returns true if tg.Message matches the regex filter
 func Regex(r_string string) (MessageFilter , error) {
 	r , err := regexp.Compile(r_string)
 	if err != nil {
