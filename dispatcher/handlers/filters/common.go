@@ -5,10 +5,20 @@ import (
 	"github.com/gotd/td/tg"
 )
 
-type MessageFilter func(m *tg.Message) bool
-type CallbackQueryFilter func(cbq *tg.UpdateBotCallbackQuery) bool
-type InlineQueryFilter func(iq *tg.UpdateInlineBotCallbackQuery) bool
-type UpdateFilter func(u *ext.Update) bool
+var (
+	Message             = messageFilters{}
+	CallbackQuery       = callbackQueryFilters{}
+	InlineQuery         = inlineQuery{}
+	PendingJoinRequests = pendingJoinRequests{}
+)
+
+type (
+	UpdateFilter              func(u *ext.Update) bool
+	MessageFilter             func(m *tg.Message) bool
+	CallbackQueryFilter       func(cbq *tg.UpdateBotCallbackQuery) bool
+	InlineQueryFilter         func(iq *tg.UpdateBotInlineQuery) bool
+	PendingJoinRequestsFilter func(cjr *tg.UpdatePendingJoinRequests) bool
+)
 
 // Supergroup returns true if the update is from a supergroup.
 func Supergroup(u *ext.Update) bool {

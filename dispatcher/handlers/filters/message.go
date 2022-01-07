@@ -6,47 +6,49 @@ import (
 	"regexp"
 )
 
+type messageFilters struct{}
+
 // All returns true on every type of tg.Message update.
-func All(m *tg.Message) bool {
+func (*messageFilters) All(_ *tg.Message) bool {
 	return true
 }
 
 // Chat allows the tg.Message update to process if it is from that particular chat.
-func Chat(chatId int64) MessageFilter {
+func (*messageFilters) Chat(chatId int64) MessageFilter {
 	return func(m *tg.Message) bool {
 		return functions.GetChatIdFromPeer(m.PeerID) == chatId
 	}
 }
 
 // Text returns true if tg.Message consists of text.
-func Text(m *tg.Message) bool {
+func (*messageFilters) Text(m *tg.Message) bool {
 	return len(m.Message) > 0
 }
 
 // Regex returns true if the Message field of tg.Message matches the regex filter
-func Regex(rString string) (MessageFilter , error) {
-	r , err := regexp.Compile(rString)
+func (*messageFilters) Regex(rString string) (MessageFilter, error) {
+	r, err := regexp.Compile(rString)
 	if err != nil {
 		return nil, err
 	}
 	return func(m *tg.Message) bool {
 		return r.MatchString(m.Message)
-	},nil
+	}, nil
 }
 
 // Media returns true if tg.Message consists of media.
-func Media(m *tg.Message) bool {
+func (*messageFilters) Media(m *tg.Message) bool {
 	return m.Media != nil
 }
 
 // Photo returns true if tg.Message consists of photo.
-func Photo(m *tg.Message) bool {
+func (*messageFilters) Photo(m *tg.Message) bool {
 	_, photo := m.Media.(*tg.MessageMediaPhoto)
 	return photo
 }
 
 // Video returns true if tg.Message consists of video, gif etc.
-func Video(m *tg.Message) bool {
+func (*messageFilters) Video(m *tg.Message) bool {
 	doc := GetDocument(m)
 	if doc != nil {
 		for _, attr := range doc.Attributes {
@@ -60,7 +62,7 @@ func Video(m *tg.Message) bool {
 }
 
 // Animation returns true if tg.Message consists of animation.
-func Animation(m *tg.Message) bool {
+func (*messageFilters) Animation(m *tg.Message) bool {
 	doc := GetDocument(m)
 	if doc != nil {
 		for _, attr := range doc.Attributes {
@@ -74,7 +76,7 @@ func Animation(m *tg.Message) bool {
 }
 
 // Sticker returns true if tg.Message consists of sticker.
-func Sticker(m *tg.Message) bool {
+func (*messageFilters) Sticker(m *tg.Message) bool {
 	doc := GetDocument(m)
 	if doc != nil {
 		for _, attr := range doc.Attributes {
@@ -88,7 +90,7 @@ func Sticker(m *tg.Message) bool {
 }
 
 // Audio returns true if tg.Message consists of audio.
-func Audio(m *tg.Message) bool {
+func (*messageFilters) Audio(m *tg.Message) bool {
 	doc := GetDocument(m)
 	if doc != nil {
 		for _, attr := range doc.Attributes {
@@ -102,7 +104,7 @@ func Audio(m *tg.Message) bool {
 }
 
 // Edited returns true if tg.Message is an edited message.
-func Edited(m *tg.Message) bool {
+func (*messageFilters) Edited(m *tg.Message) bool {
 	return m.EditDate != 0
 }
 

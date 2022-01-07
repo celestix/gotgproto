@@ -34,9 +34,9 @@ func main() {
 			// Command Handler for /start
 			dp.AddHandler(handlers.NewCommand("start", start))
 			// Callback Query Handler with prefix filter for recieving specific query
-			dp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQueryPrefix("cb_"), buttonCallback))
+			dp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("cb_"), buttonCallback))
 			// This Message Handler will call our echo function on new messages
-			dp.AddHandlerToGroup(handlers.NewMessage(filters.Text, echo), 1)
+			dp.AddHandlerToGroup(handlers.NewMessage(filters.Message.Text, echo), 1)
 			go func() {
 				for {
 					if gotgproto.Sender != nil {
@@ -85,7 +85,7 @@ func start(ctx *ext.Context, update *ext.Update) error {
 
 func buttonCallback(ctx *ext.Context, update *ext.Update) error {
 	query := update.CallbackQuery
-	ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
+	ctx.AnswerCallback(tg.MessagesSetBotCallbackAnswerRequest{
 		Alert:   true,
 		QueryID: query.QueryID,
 		Message: "This is an example bot!",
