@@ -1,6 +1,10 @@
 package entityhelper
 
-import "github.com/gotd/td/tg"
+import (
+	"fmt"
+	"github.com/gotd/td/tg"
+	"strings"
+)
 
 // EntityRoot is used to create message entities from the input string through its various methods.
 type EntityRoot struct {
@@ -71,6 +75,17 @@ func (root *EntityRoot) Link(text, url string) *EntityRoot {
 	root.Entities = append(root.Entities, &tg.MessageEntityTextURL{Offset: root.Offset, Length: len(text), URL: url})
 	root.Offset = len(text)
 	root.String += text
+	return root
+}
+
+// Mention creates a telegram user mention link with the provided user and text to display.
+func (root *EntityRoot) Mention(text string, user interface{}) *EntityRoot {
+	switch user := user.(type) {
+	case int, int64:
+		return root.Link(text, fmt.Sprintf("tg://user?id=%d", user))
+	case string:
+		return root.Link(text, fmt.Sprintf("tg://resolve?domain=%s", strings.TrimPrefix(user, "@")))
+	}
 	return root
 }
 
