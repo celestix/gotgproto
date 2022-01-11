@@ -2,6 +2,7 @@ package gotgproto
 
 import (
 	"context"
+	"fmt"
 	"github.com/anonyindian/gotgproto/sessionMaker"
 	"github.com/anonyindian/gotgproto/storage"
 	"github.com/gotd/td/session"
@@ -21,6 +22,8 @@ var (
 	// Sender is the global variable for message sending helper.
 	Sender *message.Sender
 )
+
+const VERSION = "v1.0.0-beta03"
 
 type ClientHelper struct {
 	// Unique Telegram Application ID, get it from https://my.telegram.org/apps.
@@ -82,12 +85,18 @@ func (ch ClientHelper) CreateClient(ctx context.Context, opts telegram.Options,
 ) error {
 	client := telegram.NewClient(ch.AppID, ch.ApiHash, opts)
 
+	fmt.Printf(`
+GoTGProto %s, Copyright (C) 2022 Anony <github.com/anonyindian>
+Licensed under the terms of GNU General Public License v3
+
+`, VERSION)
+
 	if err := setup(ctx, client); err != nil {
 		return errors.Wrap(err, "setup")
 	}
 
 	return client.Run(ctx, func(ctx context.Context) error {
-		if ch.Phone != "" {
+		if ch.BotToken == "" {
 			if err := client.Auth().IfNecessary(ctx, auth.NewFlow(termAuth{phone: ch.Phone}, auth.SendCodeOptions{})); err != nil {
 				return err
 			}

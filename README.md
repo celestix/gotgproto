@@ -1,5 +1,5 @@
 # GoTGProto
-GoTGProto is a helper package for gotd library, It aims to make td's raw functions easy-to-user with the help of features like using session strings, custom helper functions, storing peers and extracting chat or user ids through it etc.
+GoTGProto is a helper package for gotd library, It aims to make td's raw functions easy-to-use with the help of features like using session strings, custom helper functions, storing peers and extracting chat or user ids through it etc.
 
 You can use this package to create bots and userbots with Telegram MTProto easily in golang, for any futher help you can check out the [documentations](https://pkg.go.dev/github.com/anonyindian/gotgproto) or reach us through the following:
 - Updates Channel: [![Channel](https://img.shields.io/badge/GoTGProto-Channel-dark)](https://telegram.me/gotgproto)

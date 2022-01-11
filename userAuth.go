@@ -30,7 +30,15 @@ type termAuth struct {
 }
 
 func (a termAuth) Phone(_ context.Context) (string, error) {
-	return a.phone, nil
+	if a.phone != "" {
+		return a.phone, nil
+	}
+	fmt.Print("Enter Phone Number: ")
+	phone, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(phone), nil
 }
 
 func (a termAuth) Password(_ context.Context) (string, error) {
@@ -43,10 +51,12 @@ func (a termAuth) Password(_ context.Context) (string, error) {
 }
 
 func (a termAuth) Code(_ context.Context, _ *tg.AuthSentCode) (string, error) {
-	fmt.Print("Enter code: ")
+	fmt.Print("Enter Code: ")
 	code, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil {
 		return "", err
 	}
 	return strings.TrimSpace(code), nil
 }
+
+//TODO: Add retry functionality for incorrect password

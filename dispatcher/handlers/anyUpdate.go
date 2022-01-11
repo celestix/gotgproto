@@ -1,6 +1,8 @@
 package handlers
 
-import "github.com/anonyindian/gotgproto/ext"
+import (
+	"github.com/anonyindian/gotgproto/ext"
+)
 
 // AnyUpdate handler is executed on all type of incoming updates.
 type AnyUpdate struct {
