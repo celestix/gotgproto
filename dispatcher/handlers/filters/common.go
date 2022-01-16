@@ -10,6 +10,7 @@ var (
 	CallbackQuery       = callbackQueryFilters{}
 	InlineQuery         = inlineQuery{}
 	PendingJoinRequests = pendingJoinRequests{}
+	ChatMemberUpdated   = chatMemberUpdated{}
 )
 
 type (
@@ -18,6 +19,7 @@ type (
 	CallbackQueryFilter       func(cbq *tg.UpdateBotCallbackQuery) bool
 	InlineQueryFilter         func(iq *tg.UpdateBotInlineQuery) bool
 	PendingJoinRequestsFilter func(cjr *tg.UpdatePendingJoinRequests) bool
+	ChatMemberUpdatedFilter   func(u *ext.Update) bool
 )
 
 // Supergroup returns true if the update is from a supergroup.

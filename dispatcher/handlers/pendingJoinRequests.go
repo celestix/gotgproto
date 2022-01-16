@@ -20,5 +20,8 @@ func (c PendingJoinRequests) CheckUpdate(ctx *ext.Context, u *ext.Update) error 
 	if u.ChatJoinRequest == nil {
 		return nil
 	}
+	if c.Filters != nil && !c.Filters(u.ChatJoinRequest) {
+		return nil
+	}
 	return c.Callback(ctx, u)
 }

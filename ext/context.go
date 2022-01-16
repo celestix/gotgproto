@@ -5,6 +5,7 @@ import (
 	"github.com/anonyindian/gotgproto/functions"
 	"github.com/anonyindian/gotgproto/storage"
 	"github.com/gotd/td/telegram/message"
+	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
 	"time"
@@ -63,72 +64,112 @@ func (ctx *Context) Reply(upd *Update, text interface{}, opts *ReplyOpts) (*tg.M
 	if opts.ReplyToMessageId != 0 {
 		builder = builder.Reply(opts.ReplyToMessageId)
 	}
+	var m = &tg.Message{}
 	switch text := (text).(type) {
 	case string:
-		return functions.ReturnNewMessageWithError(builder.Text(ctx.OriginContext, text))
+		m.Message = text
+		u, err := builder.Text(ctx.OriginContext, text)
+		return functions.ReturnNewMessageWithError(m, u, err)
 	case []styling.StyledTextOption:
-		return functions.ReturnNewMessageWithError(builder.StyledText(ctx.OriginContext, text...))
+		tb := entity.Builder{}
+		if err := styling.Perform(&tb, text...); err != nil {
+			return nil, err
+		}
+		m.Message, _ = tb.Complete()
+		u, err := builder.StyledText(ctx.OriginContext, text...)
+		return functions.ReturnNewMessageWithError(m, u, err)
 	default:
 		return nil, ErrTextInvalid
 	}
 }
 
 // SendMessage invokes method messages.sendMessage#d9d75a4 returning error if any.
-func (ctx *Context) SendMessage(chatId int64, request tg.MessagesSendMessageRequest) (*tg.Message, error) {
+func (ctx *Context) SendMessage(chatId int64, request *tg.MessagesSendMessageRequest) (*tg.Message, error) {
+	if request == nil {
+		request = &tg.MessagesSendMessageRequest{}
+	}
 	request.RandomID = time.Now().UnixNano()
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
-	return functions.ReturnNewMessageWithError(ctx.Client.MessagesSendMessage(ctx.OriginContext, &request))
+	var m = &tg.Message{}
+	m.Message = request.Message
+	u, err := ctx.Client.MessagesSendMessage(ctx.OriginContext, request)
+	return functions.ReturnNewMessageWithError(m, u, err)
 }
 
 // SendMedia invokes method messages.sendMedia#e25ff8e0 returning error if any. Send a media
-func (ctx *Context) SendMedia(chatId int64, request tg.MessagesSendMediaRequest) (*tg.Message, error) {
+func (ctx *Context) SendMedia(chatId int64, request *tg.MessagesSendMediaRequest) (*tg.Message, error) {
+	if request == nil {
+		request = &tg.MessagesSendMediaRequest{}
+	}
 	request.RandomID = time.Now().UnixNano()
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
-	return functions.ReturnNewMessageWithError(ctx.Client.MessagesSendMedia(ctx.OriginContext, &request))
+	var m = &tg.Message{}
+	m.Message = request.Message
+	u, err := ctx.Client.MessagesSendMedia(ctx.OriginContext, request)
+	return functions.ReturnNewMessageWithError(m, u, err)
 }
 
 // TODO: Implement return helper for inline bot result
 
 // SendInlineBotResult invokes method messages.sendInlineBotResult#7aa11297 returning error if any. Send a result obtained using messages.getInlineBotResults¹.
-func (ctx *Context) SendInlineBotResult(chatId int64, request tg.MessagesSendInlineBotResultRequest) (tg.UpdatesClass, error) {
+func (ctx *Context) SendInlineBotResult(chatId int64, request *tg.MessagesSendInlineBotResultRequest) (tg.UpdatesClass, error) {
+	if request == nil {
+		request = &tg.MessagesSendInlineBotResultRequest{}
+	}
 	request.RandomID = time.Now().UnixNano()
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
-	return ctx.Client.MessagesSendInlineBotResult(ctx.OriginContext, &request)
+	return ctx.Client.MessagesSendInlineBotResult(ctx.OriginContext, request)
 }
 
 // SendReaction invokes method messages.sendReaction#25690ce4 returning error if any.
-func (ctx *Context) SendReaction(chatId int64, request tg.MessagesSendReactionRequest) (*tg.Message, error) {
+func (ctx *Context) SendReaction(chatId int64, request *tg.MessagesSendReactionRequest) (*tg.Message, error) {
+	if request == nil {
+		request = &tg.MessagesSendReactionRequest{}
+	}
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
-	return functions.ReturnNewMessageWithError(ctx.Client.MessagesSendReaction(ctx.OriginContext, &request))
+	var m = &tg.Message{}
+	m.Message = request.Reaction
+	u, err := ctx.Client.MessagesSendReaction(ctx.OriginContext, request)
+	return functions.ReturnNewMessageWithError(m, u, err)
 }
 
 // SendMultiMedia invokes method messages.sendMultiMedia#f803138f returning error if any. Send an album or grouped media¹
-func (ctx *Context) SendMultiMedia(chatId int64, request tg.MessagesSendMultiMediaRequest) (*tg.Message, error) {
+func (ctx *Context) SendMultiMedia(chatId int64, request *tg.MessagesSendMultiMediaRequest) (*tg.Message, error) {
+	if request == nil {
+		request = &tg.MessagesSendMultiMediaRequest{}
+	}
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
-	return functions.ReturnNewMessageWithError(ctx.Client.MessagesSendMultiMedia(ctx.OriginContext, &request))
+	u, err := ctx.Client.MessagesSendMultiMedia(ctx.OriginContext, request)
+	return functions.ReturnNewMessageWithError(&tg.Message{}, u, err)
 }
 
 // AnswerCallback invokes method messages.setBotCallbackAnswer#d58f130a returning error if any. Set the callback answer to a user button press
-func (ctx *Context) AnswerCallback(request tg.MessagesSetBotCallbackAnswerRequest) (bool, error) {
-	return ctx.Client.MessagesSetBotCallbackAnswer(ctx.OriginContext, &request)
+func (ctx *Context) AnswerCallback(request *tg.MessagesSetBotCallbackAnswerRequest) (bool, error) {
+	if request == nil {
+		request = &tg.MessagesSetBotCallbackAnswerRequest{}
+	}
+	return ctx.Client.MessagesSetBotCallbackAnswer(ctx.OriginContext, request)
 }
 
 // EditMessage invokes method messages.editMessage#48f71778 returning error if any. Edit message
-func (ctx *Context) EditMessage(chatId int64, request tg.MessagesEditMessageRequest) (*tg.Message, error) {
+func (ctx *Context) EditMessage(chatId int64, request *tg.MessagesEditMessageRequest) (*tg.Message, error) {
+	if request == nil {
+		request = &tg.MessagesEditMessageRequest{}
+	}
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
-	return functions.ReturnEditMessageWithError(ctx.Client.MessagesEditMessage(ctx.OriginContext, &request))
+	return functions.ReturnEditMessageWithError(ctx.Client.MessagesEditMessage(ctx.OriginContext, request))
 }
 
 // GetChat returns tg.ChatFullClass of the provided chat id.

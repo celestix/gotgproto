@@ -4,7 +4,18 @@ import (
 	"github.com/gotd/td/tg"
 )
 
-func GetNewMessageUpdate(upds tg.UpdatesClass) *tg.Message {
+func GetNewMessageUpdate(msgData *tg.Message, upds tg.UpdatesClass) *tg.Message {
+	u, ok := upds.(*tg.UpdateShortSentMessage)
+	if ok {
+		msgData.Flags = u.Flags
+		msgData.Out = u.Out
+		msgData.ID = u.ID
+		msgData.Date = u.Date
+		msgData.Media = u.Media
+		msgData.Entities = u.Entities
+		msgData.TTLPeriod = u.TTLPeriod
+		return msgData
+	}
 	for _, update := range GetUpdateClassFromUpdatesClass(upds) {
 		switch u := update.(type) {
 		case *tg.UpdateNewMessage:
@@ -56,13 +67,16 @@ func GetMessageFromMessageClass(m tg.MessageClass) *tg.Message {
 }
 
 // *************************************************
-// ******************INNER HELPERS******************
+// *****************INTERNAL-HELPERS****************
 
-func ReturnNewMessageWithError(upds tg.UpdatesClass, err error) (*tg.Message, error) {
+func ReturnNewMessageWithError(msgData *tg.Message, upds tg.UpdatesClass, err error) (*tg.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	return GetNewMessageUpdate(upds), nil
+	if msgData == nil {
+		msgData = &tg.Message{}
+	}
+	return GetNewMessageUpdate(msgData, upds), nil
 }
 
 func ReturnEditMessageWithError(upds tg.UpdatesClass, err error) (*tg.Message, error) {

@@ -15,6 +15,10 @@ type Update struct {
 	InlineQuery *tg.UpdateBotInlineQuery
 	// ChatJoinRequest is the tg.UpdatePendingJoinRequests of current update.
 	ChatJoinRequest *tg.UpdatePendingJoinRequests
+	// ChatParticipant is the tg.UpdateChatParticipant of current update.
+	ChatParticipant *tg.UpdateChatParticipant
+	// ChannelParticipant is the tg.UpdateChannelParticipant of current update.
+	ChannelParticipant *tg.UpdateChannelParticipant
 	// UpdateClass is the current update in raw form.
 	UpdateClass tg.UpdateClass
 	// Entities of an update, i.e. mapped users, chats and channels.
@@ -39,6 +43,10 @@ func GetNewUpdate(e *tg.Entities, update tg.UpdateClass) *Update {
 		u.InlineQuery = update
 	case *tg.UpdatePendingJoinRequests:
 		u.ChatJoinRequest = update
+	case *tg.UpdateChatParticipant:
+		u.ChatParticipant = update
+	case *tg.UpdateChannelParticipant:
+		u.ChannelParticipant = update
 	}
 	return u
 }

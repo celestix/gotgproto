@@ -103,6 +103,7 @@ func (dp *CustomDispatcher) dispatch(ctx context.Context, e tg.Entities, update 
 func (dp *CustomDispatcher) handleUpdates(ctx context.Context, e tg.Entities, update tg.UpdateClass) error {
 	c := ext.NewContext(ctx, gotgproto.Api, gotgproto.Self, gotgproto.Sender, &e)
 	u := ext.GetNewUpdate(&e, update)
+	var err error
 	defer func() {
 		if r := recover(); r != nil {
 			errorStack := fmt.Sprintf("%s\n", r) + string(debug.Stack())
@@ -113,7 +114,6 @@ func (dp *CustomDispatcher) handleUpdates(ctx context.Context, e tg.Entities, up
 			log.Println(errorStack)
 		}
 	}()
-	var err error
 	for group := range dp.handlerGroups {
 		for _, handler := range dp.handlerMap[group] {
 			err = handler.CheckUpdate(c, u)
