@@ -73,6 +73,10 @@ func (u *Update) EffectiveUser() *tg.User {
 		userId = u.CallbackQuery.UserID
 	case u.InlineQuery != nil:
 		userId = u.InlineQuery.UserID
+	case u.ChatParticipant != nil:
+		userId = u.ChannelParticipant.UserID
+	case u.ChannelParticipant != nil:
+		userId = u.ChannelParticipant.UserID
 	}
 	return u.Entities.Users[userId]
 }
@@ -90,6 +94,10 @@ func (u *Update) GetChat() *tg.Chat {
 		peer = u.EffectiveMessage.PeerID
 	case u.CallbackQuery != nil:
 		peer = u.CallbackQuery.Peer
+	case u.ChatJoinRequest != nil:
+		peer = u.ChatJoinRequest.Peer
+	case u.ChatParticipant != nil:
+		peer = &tg.PeerChat{ChatID: u.ChatParticipant.ChatID}
 	}
 	if peer == nil {
 		return nil
@@ -114,6 +122,10 @@ func (u *Update) GetChannel() *tg.Channel {
 		peer = u.EffectiveMessage.PeerID
 	case u.CallbackQuery != nil:
 		peer = u.CallbackQuery.Peer
+	case u.ChatJoinRequest != nil:
+		peer = u.ChatJoinRequest.Peer
+	case u.ChannelParticipant != nil:
+		peer = &tg.PeerChannel{ChannelID: u.ChannelParticipant.ChannelID}
 	}
 	if peer == nil {
 		return nil

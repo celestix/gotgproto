@@ -1,5 +1,7 @@
 package storage
 
+import "github.com/gotd/td/tg"
+
 type Peer struct {
 	ID         int64 `gorm:"primary_key"`
 	AccessHash int64
@@ -12,16 +14,26 @@ var (
 	PeerMemoryMap = map[int64]*Peer{}
 )
 
+type EntityType int
+
+func (e EntityType) GetInt() int {
+	return int(e)
+}
+
 const (
 	DefaultUsername   = ""
 	DefaultAccessHash = 0
-	TypeUser          = 1
-	TypeChat          = 2
-	TypeChannel       = 3
 )
 
-func AddPeer(iD, accessHash int64, peerType int, userName string) {
-	peer := &Peer{ID: iD, AccessHash: accessHash, Type: peerType, Username: userName}
+const (
+	_ EntityType = iota
+	TypeUser
+	TypeChat
+	TypeChannel
+)
+
+func AddPeer(iD, accessHash int64, peerType EntityType, userName string) {
+	peer := &Peer{ID: iD, AccessHash: accessHash, Type: peerType.GetInt(), Username: userName}
 	if StoreInMemory {
 		PeerMemoryMap[iD] = peer
 	} else {
@@ -60,4 +72,35 @@ func GetPeerByUsername(username string) *Peer {
 		return peer
 	}
 	return &Peer{}
+}
+
+// GetInputPeerById finds the provided id in the peer storage and return its tg.InputPeerClass if found.
+func GetInputPeerById(iD int64) tg.InputPeerClass {
+	return getInputPeerFromStoragePeer(GetPeerById(iD))
+}
+
+// GetInputPeerByUsername finds the provided username in the peer storage and return its tg.InputPeerClass if found.
+func GetInputPeerByUsername(userName string) tg.InputPeerClass {
+	return getInputPeerFromStoragePeer(GetPeerByUsername(userName))
+}
+
+func getInputPeerFromStoragePeer(peer *Peer) tg.InputPeerClass {
+	switch EntityType(peer.Type) {
+	case TypeUser:
+		return &tg.InputPeerUser{
+			UserID:     peer.ID,
+			AccessHash: peer.AccessHash,
+		}
+	case TypeChat:
+		return &tg.InputPeerChat{
+			ChatID: peer.ID,
+		}
+	case TypeChannel:
+		return &tg.InputPeerChannel{
+			ChannelID:  peer.ID,
+			AccessHash: peer.AccessHash,
+		}
+	default:
+		return &tg.InputPeerEmpty{}
+	}
 }

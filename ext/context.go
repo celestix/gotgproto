@@ -13,8 +13,8 @@ import (
 
 // Context consists of context.Context, tg.Client, Self etc.
 type Context struct {
-	// original context of an update.
-	OriginContext context.Context
+	// original context of the client.
+	context.Context
 	// tg client which will be used make send requests.
 	Client *tg.Client
 	// self user who authorized the session.
@@ -28,11 +28,11 @@ type Context struct {
 // NewContext creates a new Context object with provided parameters.
 func NewContext(ctx context.Context, client *tg.Client, self *tg.User, sender *message.Sender, entities *tg.Entities) *Context {
 	return &Context{
-		OriginContext: ctx,
-		Client:        client,
-		Self:          self,
-		Sender:        sender,
-		Entities:      entities,
+		Context:  ctx,
+		Client:   client,
+		Self:     self,
+		Sender:   sender,
+		Entities: entities,
 	}
 }
 
@@ -68,7 +68,7 @@ func (ctx *Context) Reply(upd *Update, text interface{}, opts *ReplyOpts) (*tg.M
 	switch text := (text).(type) {
 	case string:
 		m.Message = text
-		u, err := builder.Text(ctx.OriginContext, text)
+		u, err := builder.Text(ctx, text)
 		return functions.ReturnNewMessageWithError(m, u, err)
 	case []styling.StyledTextOption:
 		tb := entity.Builder{}
@@ -76,7 +76,7 @@ func (ctx *Context) Reply(upd *Update, text interface{}, opts *ReplyOpts) (*tg.M
 			return nil, err
 		}
 		m.Message, _ = tb.Complete()
-		u, err := builder.StyledText(ctx.OriginContext, text...)
+		u, err := builder.StyledText(ctx, text...)
 		return functions.ReturnNewMessageWithError(m, u, err)
 	default:
 		return nil, ErrTextInvalid
@@ -94,7 +94,7 @@ func (ctx *Context) SendMessage(chatId int64, request *tg.MessagesSendMessageReq
 	}
 	var m = &tg.Message{}
 	m.Message = request.Message
-	u, err := ctx.Client.MessagesSendMessage(ctx.OriginContext, request)
+	u, err := ctx.Client.MessagesSendMessage(ctx, request)
 	return functions.ReturnNewMessageWithError(m, u, err)
 }
 
@@ -109,7 +109,7 @@ func (ctx *Context) SendMedia(chatId int64, request *tg.MessagesSendMediaRequest
 	}
 	var m = &tg.Message{}
 	m.Message = request.Message
-	u, err := ctx.Client.MessagesSendMedia(ctx.OriginContext, request)
+	u, err := ctx.Client.MessagesSendMedia(ctx, request)
 	return functions.ReturnNewMessageWithError(m, u, err)
 }
 
@@ -124,7 +124,7 @@ func (ctx *Context) SendInlineBotResult(chatId int64, request *tg.MessagesSendIn
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
-	return ctx.Client.MessagesSendInlineBotResult(ctx.OriginContext, request)
+	return ctx.Client.MessagesSendInlineBotResult(ctx, request)
 }
 
 // SendReaction invokes method messages.sendReaction#25690ce4 returning error if any.
@@ -137,7 +137,7 @@ func (ctx *Context) SendReaction(chatId int64, request *tg.MessagesSendReactionR
 	}
 	var m = &tg.Message{}
 	m.Message = request.Reaction
-	u, err := ctx.Client.MessagesSendReaction(ctx.OriginContext, request)
+	u, err := ctx.Client.MessagesSendReaction(ctx, request)
 	return functions.ReturnNewMessageWithError(m, u, err)
 }
 
@@ -149,7 +149,7 @@ func (ctx *Context) SendMultiMedia(chatId int64, request *tg.MessagesSendMultiMe
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
-	u, err := ctx.Client.MessagesSendMultiMedia(ctx.OriginContext, request)
+	u, err := ctx.Client.MessagesSendMultiMedia(ctx, request)
 	return functions.ReturnNewMessageWithError(&tg.Message{}, u, err)
 }
 
@@ -158,7 +158,7 @@ func (ctx *Context) AnswerCallback(request *tg.MessagesSetBotCallbackAnswerReque
 	if request == nil {
 		request = &tg.MessagesSetBotCallbackAnswerRequest{}
 	}
-	return ctx.Client.MessagesSetBotCallbackAnswer(ctx.OriginContext, request)
+	return ctx.Client.MessagesSetBotCallbackAnswer(ctx, request)
 }
 
 // EditMessage invokes method messages.editMessage#48f71778 returning error if any. Edit message
@@ -169,7 +169,7 @@ func (ctx *Context) EditMessage(chatId int64, request *tg.MessagesEditMessageReq
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
-	return functions.ReturnEditMessageWithError(ctx.Client.MessagesEditMessage(ctx.OriginContext, request))
+	return functions.ReturnEditMessageWithError(ctx.Client.MessagesEditMessage(ctx, request))
 }
 
 // GetChat returns tg.ChatFullClass of the provided chat id.
@@ -178,9 +178,9 @@ func (ctx *Context) GetChat(chatId int64) (tg.ChatFullClass, error) {
 	if peer.ID == 0 {
 		return nil, ErrPeerNotFound
 	}
-	switch peer.Type {
+	switch storage.EntityType(peer.Type) {
 	case storage.TypeChannel:
-		channel, err := ctx.Client.ChannelsGetFullChannel(ctx.OriginContext, &tg.InputChannel{
+		channel, err := ctx.Client.ChannelsGetFullChannel(ctx, &tg.InputChannel{
 			ChannelID:  peer.ID,
 			AccessHash: peer.AccessHash,
 		})
@@ -189,7 +189,7 @@ func (ctx *Context) GetChat(chatId int64) (tg.ChatFullClass, error) {
 		}
 		return channel.FullChat, nil
 	case storage.TypeChat:
-		chat, err := ctx.Client.MessagesGetFullChat(ctx.OriginContext, chatId)
+		chat, err := ctx.Client.MessagesGetFullChat(ctx, chatId)
 		if err != nil {
 			return nil, err
 		}
@@ -204,8 +204,8 @@ func (ctx *Context) GetUser(userId int64) (*tg.UserFull, error) {
 	if peer.ID == 0 {
 		return nil, ErrPeerNotFound
 	}
-	if peer.Type == storage.TypeUser {
-		user, err := ctx.Client.UsersGetFullUser(ctx.OriginContext, &tg.InputUser{
+	if peer.Type == storage.TypeUser.GetInt() {
+		user, err := ctx.Client.UsersGetFullUser(ctx, &tg.InputUser{
 			UserID:     peer.ID,
 			AccessHash: peer.AccessHash,
 		})
@@ -216,6 +216,14 @@ func (ctx *Context) GetUser(userId int64) (*tg.UserFull, error) {
 	} else {
 		return nil, ErrNotUser
 	}
+}
+
+func (ctx *Context) GetMessages(messageIds []tg.InputMessageClass) ([]tg.MessageClass, error) {
+	return functions.GetMessages(ctx, ctx.Client, messageIds)
+}
+
+// Todo
+func (ctx *Context) BanUser() {
 }
 
 // ExportSessionString returns session of authorized account in the form of string.
