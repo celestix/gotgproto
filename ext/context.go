@@ -222,8 +222,176 @@ func (ctx *Context) GetMessages(messageIds []tg.InputMessageClass) ([]tg.Message
 	return functions.GetMessages(ctx, ctx.Client, messageIds)
 }
 
-// Todo
-func (ctx *Context) BanUser() {
+func (ctx *Context) BanChatMember(chatId int64, userId int64, untilDate int) (tg.UpdatesClass, error) {
+	peerChatStorage := storage.GetPeerById(chatId)
+	if peerChatStorage.ID == 0 {
+		return nil, ErrPeerNotFound
+	}
+	var chatPeer tg.InputPeerClass
+	switch storage.EntityType(peerChatStorage.Type) {
+	case storage.TypeChannel:
+		chatPeer = &tg.InputPeerChannel{
+			ChannelID:  peerChatStorage.ID,
+			AccessHash: peerChatStorage.AccessHash,
+		}
+	case storage.TypeChat:
+		chatPeer = &tg.InputPeerChat{
+			ChatID: peerChatStorage.ID,
+		}
+	}
+	peerUser := storage.GetPeerById(userId)
+	if peerUser.ID == 0 {
+		return nil, ErrPeerNotFound
+	}
+	return functions.BanChatMember(ctx, ctx.Client, chatPeer, &tg.InputPeerUser{
+		UserID:     peerUser.ID,
+		AccessHash: peerUser.AccessHash,
+	}, untilDate)
+}
+
+func (ctx *Context) UnbanChatMember(chatId int64, userId int64, untilDate int) (bool, error) {
+	peerChatStorage := storage.GetPeerById(chatId)
+	if peerChatStorage.ID == 0 {
+		return false, ErrPeerNotFound
+	}
+	var chatPeer = &tg.InputPeerChannel{}
+	switch storage.EntityType(peerChatStorage.Type) {
+	case storage.TypeChannel:
+		chatPeer = &tg.InputPeerChannel{
+			ChannelID:  peerChatStorage.ID,
+			AccessHash: peerChatStorage.AccessHash,
+		}
+	default:
+		return false, ErrNotChannel
+	}
+	peerUser := storage.GetPeerById(userId)
+	if peerUser.ID == 0 {
+		return false, ErrPeerNotFound
+	}
+	return functions.UnbanChatMember(ctx, ctx.Client, chatPeer, &tg.InputPeerUser{
+		UserID:     peerUser.ID,
+		AccessHash: peerUser.AccessHash,
+	})
+}
+
+func (ctx *Context) AddChatMembers(chatId int64, userIds []int64, forwardLimit int) (bool, error) {
+	peerChatStorage := storage.GetPeerById(chatId)
+	if peerChatStorage.ID == 0 {
+		return false, ErrPeerNotFound
+	}
+	var chatPeer tg.InputPeerClass
+	switch storage.EntityType(peerChatStorage.Type) {
+	case storage.TypeChannel:
+		chatPeer = &tg.InputPeerChannel{
+			ChannelID:  peerChatStorage.ID,
+			AccessHash: peerChatStorage.AccessHash,
+		}
+	case storage.TypeChat:
+		chatPeer = &tg.InputPeerChat{
+			ChatID: peerChatStorage.ID,
+		}
+	default:
+		return false, ErrNotChat
+	}
+	userPeers := make([]tg.InputUserClass, len(userIds))
+	for i, uId := range userIds {
+		userPeer := storage.GetPeerById(uId)
+		if userPeer.ID == 0 {
+			return false, ErrPeerNotFound
+		}
+		if userPeer.Type != int(storage.TypeUser) {
+			return false, ErrNotUser
+		}
+		userPeers[i] = &tg.InputUser{
+			UserID:     userPeer.ID,
+			AccessHash: userPeer.AccessHash,
+		}
+	}
+	return functions.AddChatMembers(ctx, ctx.Client, chatPeer, userPeers, forwardLimit)
+}
+
+func (ctx *Context) ArchiveChats(chatIds []int64) (bool, error) {
+	chatPeers := make([]tg.InputPeerClass, len(chatIds))
+	for i, chatId := range chatIds {
+		peer := storage.GetPeerById(chatId)
+		if peer.ID == 0 {
+			return false, ErrPeerNotFound
+		}
+		switch storage.EntityType(peer.Type) {
+		case storage.TypeChannel:
+			chatPeers[i] = &tg.InputPeerChannel{
+				ChannelID:  peer.ID,
+				AccessHash: peer.AccessHash,
+			}
+		case storage.TypeUser:
+			chatPeers[i] = &tg.InputPeerUser{
+				UserID:     peer.ID,
+				AccessHash: peer.AccessHash,
+			}
+		case storage.TypeChat:
+			chatPeers[i] = &tg.InputPeerChat{
+				ChatID: peer.ID,
+			}
+		}
+	}
+	return functions.ArchiveChats(ctx, ctx.Client, chatPeers)
+}
+
+func (ctx *Context) UnarchiveChats(chatIds []int64) (bool, error) {
+	chatPeers := make([]tg.InputPeerClass, len(chatIds))
+	for i, chatId := range chatIds {
+		peer := storage.GetPeerById(chatId)
+		if peer.ID == 0 {
+			return false, ErrPeerNotFound
+		}
+		switch storage.EntityType(peer.Type) {
+		case storage.TypeChannel:
+			chatPeers[i] = &tg.InputPeerChannel{
+				ChannelID:  peer.ID,
+				AccessHash: peer.AccessHash,
+			}
+		case storage.TypeUser:
+			chatPeers[i] = &tg.InputPeerUser{
+				UserID:     peer.ID,
+				AccessHash: peer.AccessHash,
+			}
+		case storage.TypeChat:
+			chatPeers[i] = &tg.InputPeerChat{
+				ChatID: peer.ID,
+			}
+		}
+	}
+	return functions.UnarchiveChats(ctx, ctx.Client, chatPeers)
+}
+
+func (ctx *Context) CreateChannel(title string, about string, broadcast bool) (tg.UpdatesClass, error) {
+	return functions.CreateChannel(ctx, ctx.Client, title, about, broadcast)
+}
+
+func (ctx *Context) CreateChat(title string, userIds []int64) (tg.UpdatesClass, error) {
+	userPeers := make([]tg.InputUserClass, len(userIds))
+	for i, uId := range userIds {
+		userPeer := storage.GetPeerById(uId)
+		if userPeer.ID == 0 {
+			return nil, ErrPeerNotFound
+		}
+		if userPeer.Type != int(storage.TypeUser) {
+			return nil, ErrNotUser
+		}
+		userPeers[i] = &tg.InputUser{
+			UserID:     userPeer.ID,
+			AccessHash: userPeer.AccessHash,
+		}
+	}
+	return functions.CreateChat(ctx, ctx.Client, title, userPeers)
+}
+
+func (ctx *Context) ResolveUsername(username string) (tg.PeerClass, error) {
+	peer, err := ctx.Client.ContactsResolveUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	return peer.Peer, nil
 }
 
 // ExportSessionString returns session of authorized account in the form of string.

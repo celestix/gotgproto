@@ -48,7 +48,7 @@ func GetInputPeerClassFromId(iD int64) tg.InputPeerClass {
 	if peer.ID == 0 {
 		return nil
 	}
-	switch peer.Type {
+	switch storage.EntityType(peer.Type) {
 	case storage.TypeUser:
 		return &tg.InputPeerUser{
 			UserID:     peer.ID,

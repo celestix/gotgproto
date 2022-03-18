@@ -85,7 +85,7 @@ func start(ctx *ext.Context, update *ext.Update) error {
 
 func buttonCallback(ctx *ext.Context, update *ext.Update) error {
 	query := update.CallbackQuery
-	ctx.AnswerCallback(tg.MessagesSetBotCallbackAnswerRequest{
+	ctx.AnswerCallback(&tg.MessagesSetBotCallbackAnswerRequest{
 		Alert:   true,
 		QueryID: query.QueryID,
 		Message: "This is an example bot!",
