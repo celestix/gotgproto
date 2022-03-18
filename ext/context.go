@@ -386,6 +386,8 @@ func (ctx *Context) CreateChat(title string, userIds []int64) (tg.UpdatesClass, 
 	return functions.CreateChat(ctx, ctx.Client, title, userPeers)
 }
 
+// TODO: Add documentation
+
 func (ctx *Context) ResolveUsername(username string) (tg.PeerClass, error) {
 	peer, err := ctx.Client.ContactsResolveUsername(ctx, username)
 	if err != nil {
