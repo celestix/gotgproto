@@ -1,9 +1,10 @@
 package handlers
 
 import (
+	"strings"
+
 	"github.com/anonyindian/gotgproto/dispatcher/handlers/filters"
 	"github.com/anonyindian/gotgproto/ext"
-	"strings"
 )
 
 // Command handler is executed when the update consists of tg.Message provided it is a command and satisfies all the conditions.
@@ -29,7 +30,7 @@ func NewCommand(name string, response CallbackResponse) Command {
 }
 
 func (c Command) CheckUpdate(ctx *ext.Context, u *ext.Update) error {
-	if u.EffectiveMessage == nil || len(u.EffectiveMessage.Message) == 0 {
+	if u.EffectiveMessage == nil || u.EffectiveMessage.Message == "" {
 		return nil
 	}
 	if !c.Outgoing && u.EffectiveMessage.Out {
