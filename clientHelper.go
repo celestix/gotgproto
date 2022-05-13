@@ -3,6 +3,7 @@ package gotgproto
 import (
 	"context"
 	"fmt"
+
 	"github.com/anonyindian/gotgproto/sessionMaker"
 	"github.com/anonyindian/gotgproto/storage"
 	"github.com/gotd/td/session"
@@ -63,7 +64,7 @@ func StartClient(c ClientHelper) {
 		}
 		return c.CreateClient(ctx, opts, c.TaskFunc, telegram.RunUntilCanceled)
 	})
-	return
+
 }
 
 func (ch ClientHelper) Run(f func(ctx context.Context, log *zap.Logger) error) context.Context {
