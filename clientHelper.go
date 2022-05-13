@@ -67,7 +67,7 @@ func StartClient(c ClientHelper) {
 
 }
 
-func (ch ClientHelper) Run(f func(ctx context.Context, log *zap.Logger) error) context.Context {
+func (ClientHelper) Run(f func(ctx context.Context, log *zap.Logger) error) context.Context {
 	clog, err := zap.NewProduction()
 	if err != nil {
 		panic(err)
