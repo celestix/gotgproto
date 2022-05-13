@@ -2,13 +2,14 @@ package ext
 
 import (
 	"context"
+	"time"
+
 	"github.com/anonyindian/gotgproto/functions"
 	"github.com/anonyindian/gotgproto/storage"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
-	"time"
 )
 
 // Context consists of context.Context, tg.Client, Self etc.
@@ -222,7 +223,7 @@ func (ctx *Context) GetMessages(messageIds []tg.InputMessageClass) ([]tg.Message
 	return functions.GetMessages(ctx, ctx.Client, messageIds)
 }
 
-func (ctx *Context) BanChatMember(chatId int64, userId int64, untilDate int) (tg.UpdatesClass, error) {
+func (ctx *Context) BanChatMember(chatId, userId int64, untilDate int) (tg.UpdatesClass, error) {
 	peerChatStorage := storage.GetPeerById(chatId)
 	if peerChatStorage.ID == 0 {
 		return nil, ErrPeerNotFound
@@ -249,7 +250,7 @@ func (ctx *Context) BanChatMember(chatId int64, userId int64, untilDate int) (tg
 	}, untilDate)
 }
 
-func (ctx *Context) UnbanChatMember(chatId int64, userId int64, untilDate int) (bool, error) {
+func (ctx *Context) UnbanChatMember(chatId, userId int64, untilDate int) (bool, error) {
 	peerChatStorage := storage.GetPeerById(chatId)
 	if peerChatStorage.ID == 0 {
 		return false, ErrPeerNotFound
@@ -364,7 +365,7 @@ func (ctx *Context) UnarchiveChats(chatIds []int64) (bool, error) {
 	return functions.UnarchiveChats(ctx, ctx.Client, chatPeers)
 }
 
-func (ctx *Context) CreateChannel(title string, about string, broadcast bool) (tg.UpdatesClass, error) {
+func (ctx *Context) CreateChannel(title, about string, broadcast bool) (tg.UpdatesClass, error) {
 	return functions.CreateChannel(ctx, ctx.Client, title, about, broadcast)
 }
 
