@@ -5,20 +5,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gotd/td/telegram/auth"
-	"github.com/gotd/td/tg"
 	"os"
 	"strings"
+
+	"github.com/gotd/td/telegram/auth"
+	"github.com/gotd/td/tg"
 )
 
 // noSignUp can be embedded to prevent signing up.
 type noSignUp struct{}
 
-func (c noSignUp) SignUp(_ context.Context) (auth.UserInfo, error) {
+func (noSignUp) SignUp(_ context.Context) (auth.UserInfo, error) {
 	return auth.UserInfo{}, errors.New("not implemented")
 }
 
-func (c noSignUp) AcceptTermsOfService(_ context.Context, tos tg.HelpTermsOfService) error {
+func (noSignUp) AcceptTermsOfService(_ context.Context, tos tg.HelpTermsOfService) error {
 	return &auth.SignUpRequired{TermsOfService: tos}
 }
 
@@ -41,7 +42,7 @@ func (a termAuth) Phone(_ context.Context) (string, error) {
 	return strings.TrimSpace(phone), nil
 }
 
-func (a termAuth) Password(_ context.Context) (string, error) {
+func (termAuth) Password(_ context.Context) (string, error) {
 	fmt.Print("Enter 2FA password: ")
 	pass, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil {
@@ -50,7 +51,7 @@ func (a termAuth) Password(_ context.Context) (string, error) {
 	return strings.TrimSpace(pass), nil
 }
 
-func (a termAuth) Code(_ context.Context, _ *tg.AuthSentCode) (string, error) {
+func (termAuth) Code(_ context.Context, _ *tg.AuthSentCode) (string, error) {
 	fmt.Print("Enter Code: ")
 	code, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil {

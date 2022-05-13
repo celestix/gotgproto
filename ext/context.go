@@ -400,6 +400,6 @@ func (ctx *Context) ResolveUsername(username string) (tg.PeerClass, error) {
 // ExportSessionString returns session of authorized account in the form of string.
 // Note: This session string can be used to log back in with the help of gotgproto.
 // Check sessionMaker.SessionType for more information about it.
-func (ctx *Context) ExportSessionString() (string, error) {
+func (*Context) ExportSessionString() (string, error) {
 	return functions.EncodeSessionToString(storage.GetSession())
 }
