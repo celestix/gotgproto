@@ -1,14 +1,15 @@
 package filters
 
 import (
-	"github.com/gotd/td/tg"
 	"strings"
+
+	"github.com/gotd/td/tg"
 )
 
 type inlineQuery struct{}
 
 // All returns true on every type of tg.UpdateBotInlineQuery update.
-func (*inlineQuery) All(iq *tg.UpdateBotInlineQuery) bool {
+func (*inlineQuery) All(_ *tg.UpdateBotInlineQuery) bool {
 	return true
 }
 
