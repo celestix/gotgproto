@@ -250,7 +250,7 @@ func (ctx *Context) BanChatMember(chatId, userId int64, untilDate int) (tg.Updat
 	}, untilDate)
 }
 
-func (ctx *Context) UnbanChatMember(chatId, userId int64, untilDate int) (bool, error) {
+func (ctx *Context) UnbanChatMember(chatId, userId int64, _ int) (bool, error) {
 	peerChatStorage := storage.GetPeerById(chatId)
 	if peerChatStorage.ID == 0 {
 		return false, ErrPeerNotFound

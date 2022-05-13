@@ -5,7 +5,7 @@ import "github.com/anonyindian/gotgproto/ext"
 type chatMemberUpdated struct{}
 
 // All returns true on every type of tg.UpdateChannelParticipant and tg.UpdateChatParticipant update.
-func (*chatMemberUpdated) All(u *ext.Update) bool {
+func (*chatMemberUpdated) All(_ *ext.Update) bool {
 	return true
 }
 
