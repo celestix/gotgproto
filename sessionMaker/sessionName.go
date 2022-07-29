@@ -1,7 +1,9 @@
 package sessionMaker
 
 import (
+	"encoding/json"
 	"fmt"
+
 	"github.com/anonyindian/gotgproto/functions"
 	"github.com/anonyindian/gotgproto/storage"
 	"github.com/gotd/td/session"
@@ -40,25 +42,34 @@ func (s *SessionName) GetName() string {
 }
 
 // GetData is used for retrieving session data through provided SessionName type.
-func (s *SessionName) GetData() (*session.Data, error) {
+func (s *SessionName) GetData() ([]byte, error) {
 	switch s.sessionType {
 	case TelethonSession:
 		storage.Load("telethon.session")
-		return session.TelethonSession(s.name)
+		sd, err := session.TelethonSession(s.name)
+		if err != nil {
+			return nil, err
+		}
+		data, err := json.Marshal(jsonData{
+			Version: storage.LatestVersion,
+			Data:    *sd,
+		})
+		return data, err
 	case StringSession:
 		storage.Load("gotgproto.session")
-		return functions.DecodeStringToSession(s.name)
+		sd, err := functions.DecodeStringToSession(s.name)
+		if err != nil {
+			return nil, err
+		}
+
+		// data, err := json.Marshal(jsonData{
+		// 	Version: latestVersion,
+		// 	Data:    *sd,
+		// })
+		return sd.Data, err
 	default:
 		storage.Load(fmt.Sprintf("%s.session", s.name))
 		sFD := storage.GetSession()
-		if sFD.DC == 0 {
-			return nil, session.ErrNotFound
-		}
-		return &session.Data{
-			DC:        sFD.DC,
-			Addr:      sFD.Addr,
-			AuthKey:   sFD.AuthKey,
-			AuthKeyID: sFD.AuthKeyID,
-		}, nil
+		return sFD.Data, nil
 	}
 }

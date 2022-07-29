@@ -1,10 +1,11 @@
 package storage
 
 import (
+	"log"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"log"
 )
 
 var SESSION *gorm.DB
@@ -12,7 +13,7 @@ var SESSION *gorm.DB
 func Load(sessionName string) {
 	db, err := gorm.Open(sqlite.Open(sessionName), &gorm.Config{
 		SkipDefaultTransaction: true,
-		Logger:                 logger.Default.LogMode(logger.Silent),
+		Logger:                 logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
 		log.Panicln(err)

@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/anonyindian/gotgproto/storage"
-	"github.com/gotd/td/session"
+	"fmt"
 	"strings"
+
+	"github.com/anonyindian/gotgproto/storage"
 )
 
 // EncodeSessionToString encodes the provided session to a string in base64 using json bytes.
 func EncodeSessionToString(session *storage.Session) (string, error) {
+	fmt.Printf("session.Data: %s\n", string(session.Data))
 	var buf bytes.Buffer
 	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
 	err := json.NewEncoder(encoder).Encode(session)
@@ -22,7 +24,8 @@ func EncodeSessionToString(session *storage.Session) (string, error) {
 }
 
 // DecodeStringToSession decodes the provided base64 encoded session string to session.Data.
-func DecodeStringToSession(sessionString string) (*session.Data, error) {
-	var sessionData session.Data
+func DecodeStringToSession(sessionString string) (*storage.Session, error) {
+	// var sessionData session.Data
+	var sessionData storage.Session
 	return &sessionData, json.NewDecoder(base64.NewDecoder(base64.StdEncoding, strings.NewReader(sessionString))).Decode(&sessionData)
 }

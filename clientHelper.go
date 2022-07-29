@@ -9,6 +9,7 @@ import (
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
+	"github.com/gotd/td/telegram/dcs"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
 	"github.com/pkg/errors"
@@ -43,6 +44,18 @@ type ClientHelper struct {
 	TaskFunc func(ctx context.Context, client *telegram.Client) error
 	// A Logger provides fast, leveled, structured logging. All methods are safe for concurrent use.
 	Logger *zap.Logger
+	// PublicKeys of telegram.
+	//
+	// If not provided, embedded public keys will be used.
+	PublicKeys []telegram.PublicKey
+	// DC ID to connect.
+	//
+	// If not provided, 2 will be used by default.
+	DC int
+	// DCList is initial list of addresses to connect.
+	DCList dcs.List
+	// Resolver to use.
+	Resolver dcs.Resolver
 }
 
 // StartClient is the helper for gotd/td which creates client, runs it, prepares storage etc.
@@ -58,6 +71,7 @@ func StartClient(c ClientHelper) {
 	}
 	c.Run(func(ctx context.Context, log *zap.Logger) error {
 		opts := telegram.Options{
+			DCList:         c.DCList,
 			Logger:         c.Logger,
 			UpdateHandler:  c.Dispatcher,
 			SessionStorage: sessionStorage,

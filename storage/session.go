@@ -1,13 +1,24 @@
 package storage
 
+import "fmt"
+
 type Session struct {
-	DC        int `gorm:"primary_key"`
-	Addr      string
-	AuthKey   []byte
-	AuthKeyID []byte
+	Version int `gorm:"primary_key"`
+	Data    []byte
 }
 
+const LatestVersion = 1
+
+// type Session1 struct {
+// 	Version   int `gorm:"primary_key"`
+// 	DC        int
+// 	Addr      string
+// 	AuthKey   []byte
+// 	AuthKeyID []byte
+// }
+
 func UpdateSession(session *Session) {
+	// fmt.Println("update", session)
 	tx := SESSION.Begin()
 	tx.Save(session)
 	tx.Commit()
@@ -15,7 +26,8 @@ func UpdateSession(session *Session) {
 
 // GetSession returns the session saved in storage.
 func GetSession() *Session {
-	session := &Session{}
+	session := &Session{Version: LatestVersion}
 	SESSION.Model(&Session{}).Find(&session)
+	fmt.Println("get", session)
 	return session
 }
