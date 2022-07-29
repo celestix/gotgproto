@@ -112,9 +112,18 @@ Licensed under the terms of GNU General Public License v3
 
 	return client.Run(ctx, func(ctx context.Context) error {
 		if ch.BotToken == "" {
-			if err := client.Auth().IfNecessary(ctx, auth.NewFlow(termAuth{phone: ch.Phone}, auth.SendCodeOptions{})); err != nil {
+			authClient := client.Auth()
+			authFlow := auth.NewFlow(termAuth{
+				phone:  ch.Phone,
+				client: authClient,
+			},
+				auth.SendCodeOptions{})
+			if err := IfAuthNecessary(authClient, ctx, authFlow); err != nil {
 				return err
 			}
+			// if err := authClient.IfNecessary(ctx, authFlow); err != nil {
+			// 	return err
+			// }
 		} else {
 			status, err := client.Auth().Status(ctx)
 			if err != nil {

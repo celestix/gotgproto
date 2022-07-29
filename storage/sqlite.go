@@ -13,7 +13,7 @@ var SESSION *gorm.DB
 func Load(sessionName string) {
 	db, err := gorm.Open(sqlite.Open(sessionName), &gorm.Config{
 		SkipDefaultTransaction: true,
-		Logger:                 logger.Default.LogMode(logger.Error),
+		Logger:                 logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		log.Panicln(err)

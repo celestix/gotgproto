@@ -1,7 +1,5 @@
 package storage
 
-import "fmt"
-
 type Session struct {
 	Version int `gorm:"primary_key"`
 	Data    []byte
@@ -18,7 +16,6 @@ const LatestVersion = 1
 // }
 
 func UpdateSession(session *Session) {
-	// fmt.Println("update", session)
 	tx := SESSION.Begin()
 	tx.Save(session)
 	tx.Commit()
@@ -28,6 +25,5 @@ func UpdateSession(session *Session) {
 func GetSession() *Session {
 	session := &Session{Version: LatestVersion}
 	SESSION.Model(&Session{}).Find(&session)
-	fmt.Println("get", session)
 	return session
 }

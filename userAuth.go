@@ -25,6 +25,7 @@ func (noSignUp) AcceptTermsOfService(_ context.Context, tos tg.HelpTermsOfServic
 
 // termAuth implements authentication via terminal.
 type termAuth struct {
+	client *auth.Client
 	noSignUp
 
 	phone string
@@ -59,5 +60,3 @@ func (termAuth) Code(_ context.Context, _ *tg.AuthSentCode) (string, error) {
 	}
 	return strings.TrimSpace(code), nil
 }
-
-//TODO: Add retry functionality for incorrect password

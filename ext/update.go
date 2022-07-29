@@ -146,3 +146,124 @@ func (u *Update) EffectiveChat() tg.ChatClass {
 	}
 	return &tg.ChatEmpty{}
 }
+
+func (u *Update) GetUnitedChat() UnitedChat {
+	if c := u.GetChannel(); c != nil {
+		cn := Channel(*c)
+		return &cn
+	} else if c := u.GetChat(); c != nil {
+		cn := Chat(*c)
+		return &cn
+	} else if c := u.EffectiveUser(); c != nil {
+		cn := User(*c)
+		return &cn
+	}
+	return &EmptyUC{}
+}
+
+type UnitedChat interface {
+	GetID() int64
+	GetAccessHash() int64
+	IsAChannel() bool
+	IsAChat() bool
+	IsAUser() bool
+}
+
+type EmptyUC struct{}
+
+func (*EmptyUC) GetID() int64 {
+	return 0
+}
+func (*EmptyUC) GetAccessHash() int64 {
+	return 0
+}
+func (*EmptyUC) IsAChannel() bool {
+	return false
+}
+func (*EmptyUC) IsAChat() bool {
+	return false
+}
+func (*EmptyUC) IsAUser() bool {
+	return false
+}
+
+type User tg.User
+
+func (u *User) GetID() int64 {
+	return u.ID
+}
+
+func (u *User) GetAccessHash() int64 {
+	return u.AccessHash
+}
+
+func (u *User) IsAChannel() bool {
+	return false
+}
+
+func (u *User) IsAChat() bool {
+	return false
+}
+
+func (u *User) IsAUser() bool {
+	return true
+}
+
+func (u *User) Raw() *tg.User {
+	us := tg.User(*u)
+	return &us
+}
+
+type Channel tg.Channel
+
+func (u *Channel) GetID() int64 {
+	return u.ID
+}
+
+func (u *Channel) GetAccessHash() int64 {
+	return u.AccessHash
+}
+
+func (u *Channel) IsAChannel() bool {
+	return true
+}
+
+func (u *Channel) IsAChat() bool {
+	return false
+}
+
+func (u *Channel) IsAUser() bool {
+	return false
+}
+
+func (u *Channel) Raw() *tg.Channel {
+	us := tg.Channel(*u)
+	return &us
+}
+
+type Chat tg.Chat
+
+func (u *Chat) GetID() int64 {
+	return u.ID
+}
+
+func (u *Chat) GetAccessHash() int64 {
+	return 0
+}
+
+func (u *Chat) IsAChannel() bool {
+	return true
+}
+
+func (u *Chat) IsAChat() bool {
+	return false
+}
+
+func (u *Chat) IsAUser() bool {
+	return false
+}
+
+func (u *Chat) Raw() *tg.Chat {
+	us := tg.Chat(*u)
+	return &us
+}
