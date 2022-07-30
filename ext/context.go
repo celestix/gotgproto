@@ -2,10 +2,12 @@ package ext
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/anonyindian/gotgproto/functions"
 	"github.com/anonyindian/gotgproto/storage"
+	"github.com/anonyindian/gotgproto/types"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
@@ -219,10 +221,12 @@ func (ctx *Context) GetUser(userId int64) (*tg.UserFull, error) {
 	}
 }
 
+// GetMessages is used to fetch messages from a PM (Private Chat).
 func (ctx *Context) GetMessages(messageIds []tg.InputMessageClass) ([]tg.MessageClass, error) {
 	return functions.GetMessages(ctx, ctx.Client, messageIds)
 }
 
+// BanChatMember is used to ban a user from a chat.
 func (ctx *Context) BanChatMember(chatId, userId int64, untilDate int) (tg.UpdatesClass, error) {
 	peerChatStorage := storage.GetPeerById(chatId)
 	if peerChatStorage.ID == 0 {
@@ -250,6 +254,7 @@ func (ctx *Context) BanChatMember(chatId, userId int64, untilDate int) (tg.Updat
 	}, untilDate)
 }
 
+// UnbanChatMember is used to unban a user from a chat.
 func (ctx *Context) UnbanChatMember(chatId, userId int64, _ int) (bool, error) {
 	peerChatStorage := storage.GetPeerById(chatId)
 	if peerChatStorage.ID == 0 {
@@ -275,6 +280,7 @@ func (ctx *Context) UnbanChatMember(chatId, userId int64, _ int) (bool, error) {
 	})
 }
 
+// AddChatMembers is used to add members to a chat
 func (ctx *Context) AddChatMembers(chatId int64, userIds []int64, forwardLimit int) (bool, error) {
 	peerChatStorage := storage.GetPeerById(chatId)
 	if peerChatStorage.ID == 0 {
@@ -311,6 +317,11 @@ func (ctx *Context) AddChatMembers(chatId int64, userIds []int64, forwardLimit i
 	return functions.AddChatMembers(ctx, ctx.Client, chatPeer, userPeers, forwardLimit)
 }
 
+// ArchiveChats invokes method folders.editPeerFolders#6847d0ab returning error if any.
+// Edit peers in peer folder¹
+//
+// Links:
+//  1) https://core.telegram.org/api/folders#peer-folders
 func (ctx *Context) ArchiveChats(chatIds []int64) (bool, error) {
 	chatPeers := make([]tg.InputPeerClass, len(chatIds))
 	for i, chatId := range chatIds {
@@ -338,6 +349,11 @@ func (ctx *Context) ArchiveChats(chatIds []int64) (bool, error) {
 	return functions.ArchiveChats(ctx, ctx.Client, chatPeers)
 }
 
+// UnarchiveChats invokes method folders.editPeerFolders#6847d0ab returning error if any.
+// Edit peers in peer folder¹
+//
+// Links:
+//  1) https://core.telegram.org/api/folders#peer-folders
 func (ctx *Context) UnarchiveChats(chatIds []int64) (bool, error) {
 	chatPeers := make([]tg.InputPeerClass, len(chatIds))
 	for i, chatId := range chatIds {
@@ -365,10 +381,16 @@ func (ctx *Context) UnarchiveChats(chatIds []int64) (bool, error) {
 	return functions.UnarchiveChats(ctx, ctx.Client, chatPeers)
 }
 
+// CreateChannel invokes method channels.createChannel#3d5fb10f returning error if any.
+// Create a supergroup/channel¹.
+//
+// Links:
+//  1) https://core.telegram.org/api/channel
 func (ctx *Context) CreateChannel(title, about string, broadcast bool) (tg.UpdatesClass, error) {
 	return functions.CreateChannel(ctx, ctx.Client, title, about, broadcast)
 }
 
+// CreateChat invokes method messages.createChat#9cb126e returning error if any. Creates a new chat.
 func (ctx *Context) CreateChat(title string, userIds []int64) (tg.UpdatesClass, error) {
 	userPeers := make([]tg.InputUserClass, len(userIds))
 	for i, uId := range userIds {
@@ -387,14 +409,10 @@ func (ctx *Context) CreateChat(title string, userIds []int64) (tg.UpdatesClass, 
 	return functions.CreateChat(ctx, ctx.Client, title, userPeers)
 }
 
-// TODO: Add documentation
-
-func (ctx *Context) ResolveUsername(username string) (tg.PeerClass, error) {
-	peer, err := ctx.Client.ContactsResolveUsername(ctx, username)
-	if err != nil {
-		return nil, err
-	}
-	return peer.Peer, nil
+// ResolveUsername invokes method contacts.resolveUsername#f93ccba3 returning error if any.
+// Resolve a @username to get peer info
+func (ctx *Context) ResolveUsername(username string) (types.EffectiveChat, error) {
+	return functions.ExtractContactResolvedPeer(ctx.Client.ContactsResolveUsername(ctx, strings.TrimPrefix(username, "@")))
 }
 
 // ExportSessionString returns session of authorized account in the form of string.

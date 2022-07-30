@@ -25,7 +25,7 @@ var (
 	Sender *message.Sender
 )
 
-const VERSION = "v1.0.0-beta05"
+const VERSION = "v1.0.0-beta06"
 
 type ClientHelper struct {
 	// Unique Telegram Application ID, get it from https://my.telegram.org/apps.

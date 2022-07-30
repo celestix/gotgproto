@@ -1,6 +1,9 @@
 package ext
 
 import (
+	"fmt"
+
+	"github.com/anonyindian/gotgproto/types"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
 )
@@ -32,6 +35,11 @@ func GetNewUpdate(e *tg.Entities, update tg.UpdateClass) *Update {
 		Entities:    e,
 	}
 	switch update := update.(type) {
+	case *tg.UpdateNewMessage:
+		m, ok := update.GetMessage().(*tg.Message)
+		if ok {
+			u.EffectiveMessage = m
+		}
 	case message.AnswerableMessageUpdate:
 		m, ok := update.GetMessage().(*tg.Message)
 		if ok {
@@ -137,133 +145,53 @@ func (u *Update) GetChannel() *tg.Channel {
 	return u.Entities.Channels[c.ChannelID]
 }
 
-// EffectiveChat returns the responsible tg.ChatClass for the current update.
-func (u *Update) EffectiveChat() tg.ChatClass {
-	if c := u.GetChannel(); c != nil {
-		return c
-	} else if c := u.GetChat(); c != nil {
-		return c
+// GetUserChat returns the responsible tg.User for the current update.
+func (u *Update) GetUserChat() *tg.User {
+	if u.Entities == nil {
+		return nil
 	}
-	return &tg.ChatEmpty{}
+	var (
+		peer tg.PeerClass
+	)
+	switch {
+	case u.EffectiveMessage != nil:
+		peer = u.EffectiveMessage.PeerID
+	case u.CallbackQuery != nil:
+		peer = u.CallbackQuery.Peer
+	case u.ChatJoinRequest != nil:
+		peer = u.ChatJoinRequest.Peer
+	case u.ChatParticipant != nil:
+		peer = &tg.PeerChat{ChatID: u.ChatParticipant.ChatID}
+	}
+	if peer == nil {
+		return nil
+	}
+	c, ok := peer.(*tg.PeerUser)
+	if !ok {
+		return nil
+	}
+	return u.Entities.Users[c.UserID]
 }
 
-func (u *Update) GetUnitedChat() UnitedChat {
+// EffectiveChat returns the responsible EffectiveChat for the current update.
+func (u *Update) EffectiveChat() types.EffectiveChat {
 	if c := u.GetChannel(); c != nil {
-		cn := Channel(*c)
+		cn := types.Channel(*c)
 		return &cn
 	} else if c := u.GetChat(); c != nil {
-		cn := Chat(*c)
+		cn := types.Chat(*c)
 		return &cn
-	} else if c := u.EffectiveUser(); c != nil {
-		cn := User(*c)
+	} else if c := u.GetUserChat(); c != nil {
+		cn := types.User(*c)
 		return &cn
 	}
-	return &EmptyUC{}
+	return &types.EmptyUC{}
 }
 
-type UnitedChat interface {
-	GetID() int64
-	GetAccessHash() int64
-	IsAChannel() bool
-	IsAChat() bool
-	IsAUser() bool
-}
-
-type EmptyUC struct{}
-
-func (*EmptyUC) GetID() int64 {
-	return 0
-}
-func (*EmptyUC) GetAccessHash() int64 {
-	return 0
-}
-func (*EmptyUC) IsAChannel() bool {
-	return false
-}
-func (*EmptyUC) IsAChat() bool {
-	return false
-}
-func (*EmptyUC) IsAUser() bool {
-	return false
-}
-
-type User tg.User
-
-func (u *User) GetID() int64 {
-	return u.ID
-}
-
-func (u *User) GetAccessHash() int64 {
-	return u.AccessHash
-}
-
-func (u *User) IsAChannel() bool {
-	return false
-}
-
-func (u *User) IsAChat() bool {
-	return false
-}
-
-func (u *User) IsAUser() bool {
-	return true
-}
-
-func (u *User) Raw() *tg.User {
-	us := tg.User(*u)
-	return &us
-}
-
-type Channel tg.Channel
-
-func (u *Channel) GetID() int64 {
-	return u.ID
-}
-
-func (u *Channel) GetAccessHash() int64 {
-	return u.AccessHash
-}
-
-func (u *Channel) IsAChannel() bool {
-	return true
-}
-
-func (u *Channel) IsAChat() bool {
-	return false
-}
-
-func (u *Channel) IsAUser() bool {
-	return false
-}
-
-func (u *Channel) Raw() *tg.Channel {
-	us := tg.Channel(*u)
-	return &us
-}
-
-type Chat tg.Chat
-
-func (u *Chat) GetID() int64 {
-	return u.ID
-}
-
-func (u *Chat) GetAccessHash() int64 {
-	return 0
-}
-
-func (u *Chat) IsAChannel() bool {
-	return true
-}
-
-func (u *Chat) IsAChat() bool {
-	return false
-}
-
-func (u *Chat) IsAUser() bool {
-	return false
-}
-
-func (u *Chat) Raw() *tg.Chat {
-	us := tg.Chat(*u)
-	return &us
+// GetUnitedChat returns EffectiveChat interface fot the current update.
+//
+// Note: This method is deprecated, please use u.EffectiveChat instead.
+func (u *Update) GetUnitedChat() types.EffectiveChat {
+	fmt.Println("[GOTGPROTO][WARNING]: GetUnitedChat method is deprecated, please use EffectiveChat instead.")
+	return u.EffectiveChat()
 }
