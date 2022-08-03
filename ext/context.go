@@ -2,6 +2,7 @@ package ext
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -116,6 +117,37 @@ func (ctx *Context) SendMedia(chatId int64, request *tg.MessagesSendMediaRequest
 	return functions.ReturnNewMessageWithError(m, u, err)
 }
 
+// SetInlineBotResult invokes method messages.setInlineBotResults#eb5ea206 returning error if any.
+// Answer an inline query, for bots only
+func (ctx *Context) SetInlineBotResult(request *tg.MessagesSetInlineBotResultsRequest) (bool, error) {
+	return ctx.Client.MessagesSetInlineBotResults(ctx, request)
+}
+
+func (ctx *Context) GetInlineBotResults(chatId int64, botUsername string, request *tg.MessagesGetInlineBotResultsRequest) (*tg.MessagesBotResults, error) {
+	bot := storage.GetPeerByUsername(botUsername)
+	if bot.ID == 0 {
+		c, err := ctx.ResolveUsername(botUsername)
+		if err != nil {
+			return nil, err
+		}
+		switch {
+		case c.IsAUser():
+			bot = &storage.Peer{
+				ID:         c.GetID(),
+				AccessHash: c.GetAccessHash(),
+			}
+		default:
+			return nil, errors.New("provided username was invalid for a bot")
+		}
+	}
+	request.Peer = storage.GetInputPeerById(chatId)
+	request.Bot = &tg.InputUser{
+		UserID:     bot.ID,
+		AccessHash: bot.AccessHash,
+	}
+	return ctx.Client.MessagesGetInlineBotResults(ctx, request)
+}
+
 // TODO: Implement return helper for inline bot result
 
 // SendInlineBotResult invokes method messages.sendInlineBotResult#7aa11297 returning error if any. Send a result obtained using messages.getInlineBotResults¹.
@@ -222,8 +254,20 @@ func (ctx *Context) GetUser(userId int64) (*tg.UserFull, error) {
 }
 
 // GetMessages is used to fetch messages from a PM (Private Chat).
-func (ctx *Context) GetMessages(messageIds []tg.InputMessageClass) ([]tg.MessageClass, error) {
-	return functions.GetMessages(ctx, ctx.Client, messageIds)
+func (ctx *Context) GetMessages(chatId int64, messageIds []tg.InputMessageClass) ([]tg.MessageClass, error) {
+	peer := storage.GetPeerById(chatId)
+	if peer.ID == 0 {
+		return nil, ErrPeerNotFound
+	}
+	switch storage.EntityType(peer.Type) {
+	case storage.TypeChannel:
+		return functions.GetChannelMessages(ctx, ctx.Client, &tg.InputChannel{
+			ChannelID:  peer.ID,
+			AccessHash: peer.AccessHash,
+		}, messageIds)
+	default:
+		return functions.GetChatMessages(ctx, ctx.Client, messageIds)
+	}
 }
 
 // BanChatMember is used to ban a user from a chat.
@@ -386,12 +430,12 @@ func (ctx *Context) UnarchiveChats(chatIds []int64) (bool, error) {
 //
 // Links:
 //  1) https://core.telegram.org/api/channel
-func (ctx *Context) CreateChannel(title, about string, broadcast bool) (tg.UpdatesClass, error) {
+func (ctx *Context) CreateChannel(title, about string, broadcast bool) (*tg.Channel, error) {
 	return functions.CreateChannel(ctx, ctx.Client, title, about, broadcast)
 }
 
 // CreateChat invokes method messages.createChat#9cb126e returning error if any. Creates a new chat.
-func (ctx *Context) CreateChat(title string, userIds []int64) (tg.UpdatesClass, error) {
+func (ctx *Context) CreateChat(title string, userIds []int64) (*tg.Chat, error) {
 	userPeers := make([]tg.InputUserClass, len(userIds))
 	for i, uId := range userIds {
 		userPeer := storage.GetPeerById(uId)

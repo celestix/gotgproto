@@ -2,6 +2,7 @@ package ext
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/anonyindian/gotgproto/types"
 	"github.com/gotd/td/telegram/message"
@@ -57,6 +58,19 @@ func GetNewUpdate(e *tg.Entities, update tg.UpdateClass) *Update {
 		u.ChannelParticipant = update
 	}
 	return u
+}
+
+func (u *Update) Args() []string {
+	switch {
+	case u.EffectiveMessage != nil:
+		return strings.Fields(u.EffectiveMessage.Message)
+	case u.CallbackQuery != nil:
+		return strings.Fields(string(u.CallbackQuery.Data))
+	case u.InlineQuery != nil:
+		return strings.Fields(u.InlineQuery.Query)
+	default:
+		return make([]string, 0)
+	}
 }
 
 // EffectiveUser returns the tg.User who is responsible for the update.

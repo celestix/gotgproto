@@ -13,21 +13,7 @@ func ExtractContactResolvedPeer(p *tg.ContactsResolvedPeer, err error) (types.Ef
 	if err != nil {
 		return &types.EmptyUC{}, err
 	}
-	go func() {
-		for _, chat := range p.Chats {
-			switch chat := chat.(type) {
-			case *tg.Channel:
-				storage.AddPeer(chat.ID, chat.AccessHash, storage.TypeChannel, chat.Username)
-			}
-		}
-		for _, user := range p.Users {
-			user, ok := user.(*tg.User)
-			if !ok {
-				continue
-			}
-			storage.AddPeer(user.ID, user.AccessHash, storage.TypeUser, user.Username)
-		}
-	}()
+	go SavePeersFromClassArray(p.Chats, p.Users)
 	switch p.Peer.(type) {
 	case *tg.PeerChannel:
 		if p.Chats == nil || len(p.Chats) == 0 {
@@ -112,4 +98,22 @@ func GetInputPeerClassFromId(iD int64) tg.InputPeerClass {
 		}
 	}
 	return nil
+}
+
+func SavePeersFromClassArray(cs []tg.ChatClass, us []tg.UserClass) {
+	for _, u := range us {
+		u, ok := u.(*tg.User)
+		if !ok {
+			continue
+		}
+		storage.AddPeer(u.ID, u.AccessHash, storage.TypeUser, u.Username)
+	}
+	for _, c := range cs {
+		switch c := c.(type) {
+		case *tg.Channel:
+			storage.AddPeer(c.ID, c.AccessHash, storage.TypeChannel, c.Username)
+		case *tg.Chat:
+			storage.AddPeer(c.ID, storage.DefaultAccessHash, storage.TypeChat, storage.DefaultUsername)
+		}
+	}
 }

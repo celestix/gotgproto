@@ -2,6 +2,7 @@ package functions
 
 import (
 	"context"
+
 	"github.com/gotd/td/tg"
 )
 
@@ -50,19 +51,31 @@ func ArchiveChats(context context.Context, client *tg.Client, peers []tg.InputPe
 	return err == nil, err
 }
 
-func CreateChannel(context context.Context, client *tg.Client, title, about string, broadcast bool) (tg.UpdatesClass, error) {
-	return client.ChannelsCreateChannel(context, &tg.ChannelsCreateChannelRequest{
+func CreateChannel(context context.Context, client *tg.Client, title, about string, broadcast bool) (*tg.Channel, error) {
+	udps, err := client.ChannelsCreateChannel(context, &tg.ChannelsCreateChannelRequest{
 		Title:     title,
 		About:     about,
 		Broadcast: broadcast,
 	})
+	if err != nil {
+		return nil, err
+	}
+	// Highly experimental value from ChatClass array
+	_, chats, _ := getUpdateFromUpdates(udps)
+	return chats[0].(*tg.Channel), nil
 }
 
-func CreateChat(context context.Context, client *tg.Client, title string, users []tg.InputUserClass) (tg.UpdatesClass, error) {
-	return client.MessagesCreateChat(context, &tg.MessagesCreateChatRequest{
+func CreateChat(context context.Context, client *tg.Client, title string, users []tg.InputUserClass) (*tg.Chat, error) {
+	udps, err := client.MessagesCreateChat(context, &tg.MessagesCreateChatRequest{
 		Users: users,
 		Title: title,
 	})
+	if err != nil {
+		return nil, err
+	}
+	// Highly experimental value from ChatClass map
+	_, chats, _ := getUpdateFromUpdates(udps)
+	return chats[0].(*tg.Chat), nil
 }
 
 func BanChatMember(context context.Context, client *tg.Client, chatPeer tg.InputPeerClass, userPeer *tg.InputPeerUser, untilDate int) (tg.UpdatesClass, error) {

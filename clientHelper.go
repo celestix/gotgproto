@@ -25,7 +25,7 @@ var (
 	Sender *message.Sender
 )
 
-const VERSION = "v1.0.0-beta06"
+const VERSION = "v1.0.0-beta07"
 
 type ClientHelper struct {
 	// Unique Telegram Application ID, get it from https://my.telegram.org/apps.
@@ -59,7 +59,7 @@ type ClientHelper struct {
 }
 
 // StartClient is the helper for gotd/td which creates client, runs it, prepares storage etc.
-func StartClient(c ClientHelper) {
+func StartClient(c *ClientHelper) {
 	var sessionStorage telegram.SessionStorage
 	if c.Session.GetName() == ":memory:" {
 		sessionStorage = &session.StorageMemory{}
@@ -81,7 +81,7 @@ func StartClient(c ClientHelper) {
 
 }
 
-func (ClientHelper) Run(f func(ctx context.Context, log *zap.Logger) error) context.Context {
+func (*ClientHelper) Run(f func(ctx context.Context, log *zap.Logger) error) context.Context {
 	clog, err := zap.NewProduction()
 	if err != nil {
 		panic(err)
@@ -94,7 +94,7 @@ func (ClientHelper) Run(f func(ctx context.Context, log *zap.Logger) error) cont
 	return ctx
 }
 
-func (ch ClientHelper) CreateClient(ctx context.Context, opts telegram.Options,
+func (ch *ClientHelper) CreateClient(ctx context.Context, opts telegram.Options,
 	setup func(ctx context.Context, Client *telegram.Client) error,
 	cb func(ctx context.Context, Client *telegram.Client) error,
 ) error {

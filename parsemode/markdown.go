@@ -1,6 +1,8 @@
 package parsemode
 
-import "github.com/gotd/td/telegram/message/styling"
+import (
+	"github.com/gotd/td/telegram/message/styling"
+)
 
 // ** bold
 // ` mono

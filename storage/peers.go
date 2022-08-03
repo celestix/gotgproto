@@ -1,6 +1,14 @@
 package storage
 
-import "github.com/gotd/td/tg"
+import (
+	"bytes"
+	"encoding/gob"
+	"strconv"
+	"sync"
+
+	"github.com/anonyindian/gotgproto/storage/cache"
+	"github.com/gotd/td/tg"
+)
 
 type Peer struct {
 	ID         int64 `gorm:"primary_key"`
@@ -11,6 +19,7 @@ type Peer struct {
 
 var (
 	StoreInMemory = false
+	peerLock      = sync.RWMutex{}
 	PeerMemoryMap = map[int64]*Peer{}
 )
 
@@ -35,8 +44,11 @@ const (
 func AddPeer(iD, accessHash int64, peerType EntityType, userName string) {
 	peer := &Peer{ID: iD, AccessHash: accessHash, Type: peerType.GetInt(), Username: userName}
 	if StoreInMemory {
+		peerLock.Lock()
 		PeerMemoryMap[iD] = peer
+		peerLock.Unlock()
 	} else {
+		go setCachePeers(iD, peer)
 		tx := SESSION.Begin()
 		tx.Save(peer)
 		tx.Commit()
@@ -46,15 +58,21 @@ func AddPeer(iD, accessHash int64, peerType EntityType, userName string) {
 // GetPeerById finds the provided id in the peer storage and return it if found.
 func GetPeerById(iD int64) *Peer {
 	if StoreInMemory {
+		peerLock.RLock()
 		peer := PeerMemoryMap[iD]
 		if peer == nil {
 			return &Peer{}
 		}
+		peerLock.RUnlock()
 		return peer
 	} else {
-		peer := &Peer{}
-		SESSION.Where("id = ?", iD).Find(&peer)
-		return peer
+		data, err := cache.Cache.Get(strconv.FormatInt(iD, 10))
+		if err != nil {
+			return cachePeers(iD)
+		}
+		var peer Peer
+		_ = gob.NewDecoder(bytes.NewBuffer(data)).Decode(&peer)
+		return &peer
 	}
 }
 
@@ -67,9 +85,9 @@ func GetPeerByUsername(username string) *Peer {
 			}
 		}
 	} else {
-		peer := &Peer{}
+		peer := Peer{}
 		SESSION.Where("username = ?", username).Find(&peer)
-		return peer
+		return &peer
 	}
 	return &Peer{}
 }
@@ -103,4 +121,21 @@ func getInputPeerFromStoragePeer(peer *Peer) tg.InputPeerClass {
 	default:
 		return &tg.InputPeerEmpty{}
 	}
+}
+
+func cachePeers(id int64) *Peer {
+	var peer = Peer{}
+	SESSION.Where("id = ?", id).Find(&peer)
+	setCachePeers(id, &peer)
+	return &peer
+}
+
+func setCachePeers(id int64, peer *Peer) {
+	cache.Cache.Set(strconv.FormatInt(id, 10), makeBytes(peer))
+}
+
+func makeBytes(v interface{}) []byte {
+	buf := bytes.Buffer{}
+	_ = gob.NewEncoder(&buf)
+	return buf.Bytes()
 }

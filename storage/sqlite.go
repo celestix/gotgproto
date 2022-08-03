@@ -3,6 +3,7 @@ package storage
 import (
 	"log"
 
+	"github.com/anonyindian/gotgproto/storage/cache"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -11,6 +12,10 @@ import (
 var SESSION *gorm.DB
 
 func Load(sessionName string) {
+	err := cache.Load()
+	if err != nil {
+		log.Panicln(err)
+	}
 	db, err := gorm.Open(sqlite.Open(sessionName), &gorm.Config{
 		SkipDefaultTransaction: true,
 		Logger:                 logger.Default.LogMode(logger.Silent),

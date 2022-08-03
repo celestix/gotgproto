@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+
 	"github.com/anonyindian/gotgproto"
 	"github.com/anonyindian/gotgproto/dispatcher"
 	"github.com/anonyindian/gotgproto/sessionMaker"
@@ -12,7 +13,7 @@ import (
 func main() {
 	// custom dispatcher handles all the updates
 	dp := dispatcher.MakeDispatcher()
-	gotgproto.StartClient(gotgproto.ClientHelper{
+	gotgproto.StartClient(&gotgproto.ClientHelper{
 		// Get AppID from https://my.telegram.org/apps
 		AppID: 1234567,
 		// Get ApiHash from https://my.telegram.org/apps

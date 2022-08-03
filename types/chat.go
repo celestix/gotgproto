@@ -139,12 +139,12 @@ func (u *Chat) GetAccessHash() int64 {
 
 // IsAChannel returns true for a channel.
 func (u *Chat) IsAChannel() bool {
-	return true
+	return false
 }
 
 // IsAChat returns true for a chat.
 func (u *Chat) IsAChat() bool {
-	return false
+	return true
 }
 
 // IsAUser returns true for a user.

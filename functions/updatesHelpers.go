@@ -41,21 +41,24 @@ func GetEditMessageUpdate(upds tg.UpdatesClass) *tg.Message {
 	return nil
 }
 
-func GetUpdateClassFromUpdatesClass(updates tg.UpdatesClass) []tg.UpdateClass {
-	var (
-		upds []tg.UpdateClass
-	)
+func GetUpdateClassFromUpdatesClass(updates tg.UpdatesClass) (u []tg.UpdateClass) {
+	u, _, _ = getUpdateFromUpdates(updates)
+	return
+}
+
+func getUpdateFromUpdates(updates tg.UpdatesClass) ([]tg.UpdateClass, []tg.ChatClass, []tg.UserClass) {
 	switch u := updates.(type) {
 	case *tg.Updates:
-		upds = u.Updates
+		go SavePeersFromClassArray(u.Chats, u.Users)
+		return u.Updates, u.Chats, u.Users
 	case *tg.UpdatesCombined:
-		upds = u.Updates
+		go SavePeersFromClassArray(u.Chats, u.Users)
+		return u.Updates, u.Chats, u.Users
 	case *tg.UpdateShort:
-		upds = []tg.UpdateClass{u.Update}
+		return []tg.UpdateClass{u.Update}, tg.ChatClassArray{}, tg.UserClassArray{}
 	default:
-		return nil
+		return nil, nil, nil
 	}
-	return upds
 }
 
 func GetMessageFromMessageClass(m tg.MessageClass) *tg.Message {
