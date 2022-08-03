@@ -25,7 +25,7 @@ const (
 )
 
 // Combine function combines the entity1 and entity2 and appends the resultant entity to the EntityRoot.
-func (root *EntityRoot) Combine(s string, entity1 entity, entity2 entity) *EntityRoot {
+func (root *EntityRoot) Combine(s string, entity1, entity2 entity) *EntityRoot {
 	root.setNormalEntity(s, entity1)
 	root.setNormalEntity(s, entity2)
 	root.String += s
@@ -33,7 +33,7 @@ func (root *EntityRoot) Combine(s string, entity1 entity, entity2 entity) *Entit
 }
 
 // CombineToLink function combines the given entity to the link entity of the EntityRoot.
-func (root *EntityRoot) CombineToLink(text string, link string, entity entity) *EntityRoot {
+func (root *EntityRoot) CombineToLink(text, link string, entity entity) *EntityRoot {
 	root.Entities = append(root.Entities, &tg.MessageEntityTextURL{Offset: len(root.String), Length: len(text), URL: link})
 	root.setNormalEntity(text, entity)
 	root.String += text
@@ -58,6 +58,7 @@ func (root *EntityRoot) setNormalEntity(s string, e entity) {
 }
 
 // StartParsing function creates an empty EntityRoot.
+// DEPRECATED
 func StartParsing() *EntityRoot {
 	fmt.Println("GoTGProto: func StartParsing() is deprecated, please use individual entity types instead.")
 	return startParsing()

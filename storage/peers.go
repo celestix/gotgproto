@@ -136,6 +136,6 @@ func setCachePeers(id int64, peer *Peer) {
 
 func makeBytes(v interface{}) []byte {
 	buf := bytes.Buffer{}
-	_ = gob.NewEncoder(&buf)
+	_ = gob.NewEncoder(&buf).Encode(v)
 	return buf.Bytes()
 }

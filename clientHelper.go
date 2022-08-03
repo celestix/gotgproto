@@ -25,7 +25,7 @@ var (
 	Sender *message.Sender
 )
 
-const VERSION = "v1.0.0-beta07"
+const VERSION = "v1.0.0-beta08"
 
 type ClientHelper struct {
 	// Unique Telegram Application ID, get it from https://my.telegram.org/apps.
@@ -76,7 +76,7 @@ func StartClient(c *ClientHelper) {
 			UpdateHandler:  c.Dispatcher,
 			SessionStorage: sessionStorage,
 		}
-		return c.CreateClient(ctx, opts, c.TaskFunc, telegram.RunUntilCanceled)
+		return c.CreateClient(ctx, &opts, c.TaskFunc, telegram.RunUntilCanceled)
 	})
 
 }
@@ -94,11 +94,11 @@ func (*ClientHelper) Run(f func(ctx context.Context, log *zap.Logger) error) con
 	return ctx
 }
 
-func (ch *ClientHelper) CreateClient(ctx context.Context, opts telegram.Options,
+func (ch *ClientHelper) CreateClient(ctx context.Context, opts *telegram.Options,
 	setup func(ctx context.Context, Client *telegram.Client) error,
 	cb func(ctx context.Context, Client *telegram.Client) error,
 ) error {
-	client := telegram.NewClient(ch.AppID, ch.ApiHash, opts)
+	client := telegram.NewClient(ch.AppID, ch.ApiHash, *opts)
 
 	fmt.Printf(`
 GoTGProto %s, Copyright (C) 2022 Anony <github.com/anonyindian>
