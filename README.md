@@ -29,7 +29,7 @@ import (
 )
 func main() {
     dp := dispatcher.MakeDispatcher()
-    gotgproto.StartClient(gotgproto.ClientHelper{
+    gotgproto.StartClient(&gotgproto.ClientHelper{
 		AppID: 1234567,
 		ApiHash: "API_HASH_HERE",
 		Session: sessionMaker.NewSession("session_name", sessionMaker.Session),

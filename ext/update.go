@@ -2,7 +2,6 @@ package ext
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -49,8 +48,7 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, e *tg.Entities, update
 		})
 		// Silently add catched entities to *tg.Entities
 		if err == nil {
-			switch value := diff.(type) {
-			case *tg.UpdatesDifference:
+			if value, ok := diff.(*tg.UpdatesDifference); ok {
 				for _, vu := range value.Users {
 					user, ok := vu.AsNotEmpty()
 					if !ok {
@@ -221,12 +219,4 @@ func (u *Update) EffectiveChat() types.EffectiveChat {
 		return &cn
 	}
 	return &types.EmptyUC{}
-}
-
-// GetUnitedChat returns EffectiveChat interface fot the current update.
-//
-// Note: This method is deprecated, please use u.EffectiveChat instead.
-func (u *Update) GetUnitedChat() types.EffectiveChat {
-	fmt.Println("[GOTGPROTO][WARNING]: GetUnitedChat method is deprecated, please use EffectiveChat instead.")
-	return u.EffectiveChat()
 }
