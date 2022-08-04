@@ -1,9 +1,12 @@
 package ext
 
 import (
+	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/anonyindian/gotgproto/storage"
 	"github.com/anonyindian/gotgproto/types"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
@@ -30,16 +33,33 @@ type Update struct {
 }
 
 // GetNewUpdate creates a new Update with provided parameters.
-func GetNewUpdate(e *tg.Entities, update tg.UpdateClass) *Update {
+func GetNewUpdate(ctx context.Context, client *tg.Client, e *tg.Entities, update tg.UpdateClass) *Update {
 	u := &Update{
 		UpdateClass: update,
-		Entities:    e,
 	}
 	switch update := update.(type) {
 	case *tg.UpdateNewMessage:
 		m, ok := update.GetMessage().(*tg.Message)
 		if ok {
 			u.EffectiveMessage = m
+		}
+		diff, err := client.UpdatesGetDifference(ctx, &tg.UpdatesGetDifferenceRequest{
+			Pts:  update.Pts - 1,
+			Date: int(time.Now().Unix()),
+		})
+		// Silently add catched entities to *tg.Entities
+		if err == nil {
+			switch value := diff.(type) {
+			case *tg.UpdatesDifference:
+				for _, vu := range value.Users {
+					user, ok := vu.AsNotEmpty()
+					if !ok {
+						continue
+					}
+					go storage.AddPeer(user.ID, user.AccessHash, storage.TypeUser, user.Username)
+					e.Users[user.ID] = user
+				}
+			}
 		}
 	case message.AnswerableMessageUpdate:
 		m, ok := update.GetMessage().(*tg.Message)
@@ -57,6 +77,7 @@ func GetNewUpdate(e *tg.Entities, update tg.UpdateClass) *Update {
 	case *tg.UpdateChannelParticipant:
 		u.ChannelParticipant = update
 	}
+	u.Entities = e
 	return u
 }
 

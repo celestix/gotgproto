@@ -19,7 +19,7 @@ type Peer struct {
 
 var (
 	StoreInMemory = false
-	peerLock      = sync.RWMutex{}
+	peerLock      = &sync.RWMutex{}
 	PeerMemoryMap = map[int64]*Peer{}
 )
 

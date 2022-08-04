@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"runtime/debug"
+
 	"github.com/anonyindian/gotgproto"
 	"github.com/anonyindian/gotgproto/ext"
 	"github.com/anonyindian/gotgproto/storage"
 	"github.com/gotd/td/tg"
 	"go.uber.org/multierr"
-	"log"
-	"runtime/debug"
 )
 
 var (
@@ -101,8 +102,8 @@ func (dp *CustomDispatcher) dispatch(ctx context.Context, e tg.Entities, update 
 }
 
 func (dp *CustomDispatcher) handleUpdates(ctx context.Context, e tg.Entities, update tg.UpdateClass) error {
+	u := ext.GetNewUpdate(ctx, gotgproto.Api, &e, update)
 	c := ext.NewContext(ctx, gotgproto.Api, gotgproto.Self, gotgproto.Sender, &e)
-	u := ext.GetNewUpdate(&e, update)
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
