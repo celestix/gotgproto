@@ -115,7 +115,7 @@ func (dp *CustomDispatcher) handleUpdates(ctx context.Context, e tg.Entities, up
 			log.Println(errorStack)
 		}
 	}()
-	for group := range dp.handlerGroups {
+	for _, group := range dp.handlerGroups {
 		for _, handler := range dp.handlerMap[group] {
 			err = handler.CheckUpdate(c, u)
 			if err == nil || errors.Is(err, ContinueGroups) {
