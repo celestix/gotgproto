@@ -3,6 +3,7 @@ package functions
 import (
 	"context"
 
+	"github.com/anonyindian/gotgproto/storage"
 	"github.com/gotd/td/tg"
 )
 
@@ -136,4 +137,62 @@ func UnbanChatMember(context context.Context, client *tg.Client, chatPeer *tg.In
 		},
 	})
 	return err == nil, err
+}
+
+func PromoteChatMember(ctx context.Context, client *tg.Client, chat, user *storage.Peer, rights tg.ChatAdminRights, title string) (bool, error) {
+	rights.Other = true
+	if chat.AccessHash != 0 {
+		_, err := client.ChannelsEditAdmin(ctx, &tg.ChannelsEditAdminRequest{
+			Channel: &tg.InputChannel{
+				ChannelID:  chat.ID,
+				AccessHash: chat.AccessHash,
+			},
+			UserID: &tg.InputUser{
+				UserID:     user.ID,
+				AccessHash: user.AccessHash,
+			},
+			AdminRights: rights,
+			Rank:        title,
+		})
+		return err == nil, err
+	} else {
+		_, err := client.MessagesEditChatAdmin(ctx, &tg.MessagesEditChatAdminRequest{
+			ChatID: chat.ID,
+			UserID: &tg.InputUser{
+				UserID:     user.ID,
+				AccessHash: user.AccessHash,
+			},
+			IsAdmin: true,
+		})
+		return err == nil, err
+	}
+}
+
+func DemoteChatMember(ctx context.Context, client *tg.Client, chat, user *storage.Peer, rights tg.ChatAdminRights, title string) (bool, error) {
+	rights.Other = false
+	if chat.AccessHash != 0 {
+		_, err := client.ChannelsEditAdmin(ctx, &tg.ChannelsEditAdminRequest{
+			Channel: &tg.InputChannel{
+				ChannelID:  chat.ID,
+				AccessHash: chat.AccessHash,
+			},
+			UserID: &tg.InputUser{
+				UserID:     user.ID,
+				AccessHash: user.AccessHash,
+			},
+			AdminRights: rights,
+			Rank:        title,
+		})
+		return err == nil, err
+	} else {
+		_, err := client.MessagesEditChatAdmin(ctx, &tg.MessagesEditChatAdminRequest{
+			ChatID: chat.ID,
+			UserID: &tg.InputUser{
+				UserID:     user.ID,
+				AccessHash: user.AccessHash,
+			},
+			IsAdmin: false,
+		})
+		return err == nil, err
+	}
 }

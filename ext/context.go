@@ -3,6 +3,8 @@ package ext
 import (
 	"context"
 	"errors"
+	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -27,6 +29,7 @@ type Context struct {
 	Sender *message.Sender
 	// Entities consists of mapped users, chats and channels from the update.
 	Entities *tg.Entities
+	random   *rand.Rand
 }
 
 // NewContext creates a new Context object with provided parameters.
@@ -37,7 +40,12 @@ func NewContext(ctx context.Context, client *tg.Client, self *tg.User, sender *m
 		Self:     self,
 		Sender:   sender,
 		Entities: entities,
+		random:   rand.New(rand.NewSource(time.Now().Unix())),
 	}
+}
+
+func (c *Context) generateRandomID() int64 {
+	return c.random.Int63()
 }
 
 // ReplyOpts object contains optional parameters for Context.Reply.
@@ -299,7 +307,7 @@ func (ctx *Context) BanChatMember(chatId, userId int64, untilDate int) (tg.Updat
 }
 
 // UnbanChatMember is used to unban a user from a chat.
-func (ctx *Context) UnbanChatMember(chatId, userId int64, _ int) (bool, error) {
+func (ctx *Context) UnbanChatMember(chatId, userId int64) (bool, error) {
 	peerChatStorage := storage.GetPeerById(chatId)
 	if peerChatStorage.ID == 0 {
 		return false, ErrPeerNotFound
@@ -451,6 +459,98 @@ func (ctx *Context) CreateChat(title string, userIds []int64) (*tg.Chat, error) 
 		}
 	}
 	return functions.CreateChat(ctx, ctx.Client, title, userPeers)
+}
+
+// DeleteMessages shall be used to delete messages in a chat with chatId and messageIDs.
+// Returns error if failed to delete.
+func (ctx *Context) DeleteMessages(chatId int64, messageIDs []int) error {
+	peer := storage.GetPeerById(chatId)
+	if peer.ID == 0 {
+		return ErrPeerNotFound
+	}
+	switch storage.EntityType(peer.Type) {
+	case storage.TypeChat:
+		_, err := ctx.Client.MessagesDeleteMessages(ctx, &tg.MessagesDeleteMessagesRequest{
+			Revoke: true,
+			ID:     messageIDs,
+		})
+		return err
+	case storage.TypeChannel:
+		_, err := ctx.Client.ChannelsDeleteMessages(ctx, &tg.ChannelsDeleteMessagesRequest{
+			Channel: &tg.InputChannel{
+				ChannelID:  peer.ID,
+				AccessHash: peer.AccessHash,
+			},
+		})
+		return err
+	case storage.TypeUser:
+		return ErrNotChat
+	default:
+		return ErrPeerNotFound
+	}
+}
+
+// ForwardMessage shall be used to forward messages in a chat with chatId and messageIDs.
+// Returns updatesclass or an error if failed to delete.
+func (ctx *Context) ForwardMessage(fromChatId, toChatId int64, request *tg.MessagesForwardMessagesRequest) (tg.UpdatesClass, error) {
+	fromPeer := storage.GetInputPeerById(fromChatId)
+	if fromPeer.Zero() {
+		return nil, fmt.Errorf("fromChatId: %w", ErrPeerNotFound)
+	}
+	toPeer := storage.GetInputPeerById(toChatId)
+	if toPeer.Zero() {
+		return nil, fmt.Errorf("toChatId: %w", ErrPeerNotFound)
+	}
+	if request == nil {
+		request = &tg.MessagesForwardMessagesRequest{}
+	}
+	request.RandomID = make([]int64, len(request.ID))
+	for i := 0; i < len(request.ID); i++ {
+		request.RandomID[i] = ctx.generateRandomID()
+	}
+	return ctx.Client.MessagesForwardMessages(ctx, &tg.MessagesForwardMessagesRequest{
+		RandomID: request.RandomID,
+		ID:       request.ID,
+		FromPeer: fromPeer,
+		ToPeer:   toPeer,
+	})
+}
+
+type EditAdminOpts struct {
+	AdminRights tg.ChatAdminRights
+	AdminTitle  string
+}
+
+// PromoteChatMember is used to promote a user in a chat.
+func (ctx *Context) PromoteChatMember(chatId, userId int64, opts *EditAdminOpts) (bool, error) {
+	peerChat := storage.GetPeerById(chatId)
+	if peerChat.ID == 0 {
+		return false, fmt.Errorf("chat: %w", ErrPeerNotFound)
+	}
+	peerUser := storage.GetPeerById(userId)
+	if peerUser.ID == 0 {
+		return false, fmt.Errorf("user: %w", ErrPeerNotFound)
+	}
+	if opts == nil {
+		opts = &EditAdminOpts{}
+	}
+	return functions.PromoteChatMember(ctx, ctx.Client, peerChat, peerUser, opts.AdminRights, opts.AdminTitle)
+}
+
+// DemoteChatMember is used to demote a user in a chat.
+func (ctx *Context) DemoteChatMember(chatId, userId int64, opts *EditAdminOpts) (bool, error) {
+	peerChat := storage.GetPeerById(chatId)
+	if peerChat.ID == 0 {
+		return false, fmt.Errorf("chat: %w", ErrPeerNotFound)
+	}
+	peerUser := storage.GetPeerById(userId)
+	if peerUser.ID == 0 {
+		return false, fmt.Errorf("user: %w", ErrPeerNotFound)
+	}
+	if opts == nil {
+		opts = &EditAdminOpts{}
+	}
+	return functions.PromoteChatMember(ctx, ctx.Client, peerChat, peerUser, opts.AdminRights, opts.AdminTitle)
 }
 
 // ResolveUsername invokes method contacts.resolveUsername#f93ccba3 returning error if any.
