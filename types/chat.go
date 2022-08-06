@@ -72,17 +72,17 @@ func (u *User) GetAccessHash() int64 {
 }
 
 // IsAChannel returns true for a channel.
-func (u *User) IsAChannel() bool {
+func (*User) IsAChannel() bool {
 	return false
 }
 
 // IsAChat returns true for a chat.
-func (u *User) IsAChat() bool {
+func (*User) IsAChat() bool {
 	return false
 }
 
 // IsAUser returns true for a user.
-func (u *User) IsAUser() bool {
+func (*User) IsAUser() bool {
 	return true
 }
 
@@ -105,17 +105,17 @@ func (u *Channel) GetAccessHash() int64 {
 }
 
 // IsAChannel returns true for a channel.
-func (u *Channel) IsAChannel() bool {
+func (*Channel) IsAChannel() bool {
 	return true
 }
 
 // IsAChat returns true for a chat.
-func (u *Channel) IsAChat() bool {
+func (*Channel) IsAChat() bool {
 	return false
 }
 
 // IsAUser returns true for a user.
-func (u *Channel) IsAUser() bool {
+func (*Channel) IsAUser() bool {
 	return false
 }
 
@@ -133,22 +133,22 @@ func (u *Chat) GetID() int64 {
 }
 
 // Use this method to get access hash of the effective chat.
-func (u *Chat) GetAccessHash() int64 {
+func (*Chat) GetAccessHash() int64 {
 	return 0
 }
 
 // IsAChannel returns true for a channel.
-func (u *Chat) IsAChannel() bool {
+func (*Chat) IsAChannel() bool {
 	return false
 }
 
 // IsAChat returns true for a chat.
-func (u *Chat) IsAChat() bool {
+func (*Chat) IsAChat() bool {
 	return true
 }
 
 // IsAUser returns true for a user.
-func (u *Chat) IsAUser() bool {
+func (*Chat) IsAUser() bool {
 	return false
 }
 
