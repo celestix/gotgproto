@@ -100,7 +100,7 @@ func (ctx *Context) SendMessage(chatId int64, request *tg.MessagesSendMessageReq
 	if request == nil {
 		request = &tg.MessagesSendMessageRequest{}
 	}
-	request.RandomID = time.Now().UnixNano()
+	request.RandomID = ctx.generateRandomID()
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
@@ -115,7 +115,7 @@ func (ctx *Context) SendMedia(chatId int64, request *tg.MessagesSendMediaRequest
 	if request == nil {
 		request = &tg.MessagesSendMediaRequest{}
 	}
-	request.RandomID = time.Now().UnixNano()
+	request.RandomID = ctx.generateRandomID()
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
@@ -163,7 +163,7 @@ func (ctx *Context) SendInlineBotResult(chatId int64, request *tg.MessagesSendIn
 	if request == nil {
 		request = &tg.MessagesSendInlineBotResultRequest{}
 	}
-	request.RandomID = time.Now().UnixNano()
+	request.RandomID = ctx.generateRandomID()
 	if request.Peer == nil {
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}

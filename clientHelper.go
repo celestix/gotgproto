@@ -56,6 +56,8 @@ type ClientHelper struct {
 	DCList dcs.List
 	// Resolver to use.
 	Resolver dcs.Resolver
+	// Whether to show the copyright line in console or no.
+	DisableCopyright bool
 }
 
 // StartClient is the helper for gotd/td which creates client, runs it, prepares storage etc.
@@ -99,13 +101,13 @@ func (ch *ClientHelper) CreateClient(ctx context.Context, opts *telegram.Options
 	cb func(ctx context.Context, Client *telegram.Client) error,
 ) error {
 	client := telegram.NewClient(ch.AppID, ch.ApiHash, *opts)
-
-	fmt.Printf(`
+	if !ch.DisableCopyright {
+		fmt.Printf(`
 GoTGProto %s, Copyright (C) 2022 Anony <github.com/anonyindian>
 Licensed under the terms of GNU General Public License v3
 
 `, VERSION)
-
+	}
 	if err := setup(ctx, client); err != nil {
 		return errors.Wrap(err, "setup")
 	}
