@@ -550,7 +550,7 @@ func (ctx *Context) DemoteChatMember(chatId, userId int64, opts *EditAdminOpts) 
 	if opts == nil {
 		opts = &EditAdminOpts{}
 	}
-	return functions.PromoteChatMember(ctx, ctx.Client, peerChat, peerUser, opts.AdminRights, opts.AdminTitle)
+	return functions.DemoteChatMember(ctx, ctx.Client, peerChat, peerUser, opts.AdminRights, opts.AdminTitle)
 }
 
 // ResolveUsername invokes method contacts.resolveUsername#f93ccba3 returning error if any.
