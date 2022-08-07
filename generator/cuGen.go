@@ -26,9 +26,11 @@ func readContextFile() []byte {
 }
 
 func generateCUHelpers() {
+	fmt.Println("Reading context.go")
 	ctxFile := readContextFile()
 	builder := strings.Builder{}
 	builder.WriteString(predefinedCU)
+	fmt.Println("Parsing all context methods...")
 	for _, method := range parser.ParseMethods(string(ctxFile)) {
 		if strings.ToLower(string(method.Name[0])) == string(method.Name[0]) {
 			continue
@@ -51,6 +53,7 @@ func generateCUHelpers() {
 		}
 		chatFrame, userFrame := getFrames(method)
 		inputIdParams, fetchedIdParams := getIdParams(chatFrame, userFrame)
+		fmt.Printf("Executing generic helper function template for Context.%s\n", method.Name)
 		err := helperFuncsCUTempl.Execute(&builder, contextHelpers{
 			FuncName:        method.Name,
 			FuncParams:      params,
@@ -63,10 +66,11 @@ func generateCUHelpers() {
 			// DefaultValues: goodErrReturns(method.Return),
 		})
 		if err != nil {
-			fmt.Printf("failed to generate helper for ext.Context.%s because %s", method.Name, err.Error())
+			fmt.Printf("failed to generate helper for ext.Context.%s because %s\n", method.Name, err.Error())
 			continue
 		}
 	}
+	fmt.Println("Writing gen_cu.go for context generic helpers...")
 	writeFile(builder, "generic/gen_cu.go")
 }
 

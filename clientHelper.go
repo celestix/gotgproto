@@ -1,6 +1,6 @@
 package gotgproto
 
-//go:generate go run generator
+//go:generate go run ./generator
 
 import (
 	"context"
