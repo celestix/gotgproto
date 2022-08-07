@@ -1,5 +1,7 @@
 package gotgproto
 
+//go:generate go run generator
+
 import (
 	"context"
 	"fmt"

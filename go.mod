@@ -1,6 +1,6 @@
 module github.com/anonyindian/gotgproto
 
-go 1.17
+go 1.18
 
 require (
 	github.com/allegro/bigcache v1.2.1
