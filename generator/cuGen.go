@@ -18,7 +18,7 @@ var hardCodedReplacements = map[string]string{
 }
 
 func readContextFile() []byte {
-	b, err := ioutil.ReadFile("../ext/context.go")
+	b, err := ioutil.ReadFile("ext/context.go")
 	if err != nil {
 		panic("failed to read context file: " + err.Error())
 	}
@@ -34,28 +34,68 @@ func generateCUHelpers() {
 			continue
 		}
 		params := method.Params
-		if !(strings.Contains(params, "chatId ") || strings.Contains(params, "chatId, ")) {
+		if !(strings.Contains(params, "chatId ") ||
+			strings.Contains(params, "chatId, ") ||
+			strings.Contains(params, "userId ") ||
+			strings.Contains(params, "userId, ")) {
 			continue
 		}
 		params = strings.ReplaceAll(params, "chatId, ", "")
 		params = strings.ReplaceAll(params, "chatId int64, ", "")
 		params = strings.ReplaceAll(params, "chatId int64", "")
+		params = strings.ReplaceAll(params, "userId, ", "")
+		params = strings.ReplaceAll(params, "userId int64, ", "")
+		params = strings.ReplaceAll(params, "userId int64", "")
 		for repl, valrepl := range hardCodedReplacements {
 			params = strings.ReplaceAll(params, repl, valrepl)
 		}
+		chatFrame, userFrame := getFrames(method)
+		inputIdParams, fetchedIdParams := getIdParams(chatFrame, userFrame)
 		err := helperFuncsCUTempl.Execute(&builder, contextHelpers{
-			FuncName:      method.Name,
-			FuncParams:    params,
-			FuncReturn:    method.Return,
-			FilledParams:  filledParams(params),
-			DefaultValues: goodErrReturns(method.Return),
+			FuncName:        method.Name,
+			FuncParams:      params,
+			FuncReturn:      method.Return,
+			FilledParams:    filledParams(params),
+			ChatFrame:       chatFrame,
+			UserFrame:       userFrame,
+			InputIdParams:   inputIdParams,
+			FetchedIdParams: fetchedIdParams,
+			// DefaultValues: goodErrReturns(method.Return),
 		})
 		if err != nil {
 			fmt.Printf("failed to generate helper for ext.Context.%s because %s", method.Name, err.Error())
 			continue
 		}
 	}
-	writeFile(builder, "../generic/gen_cu.go")
+	writeFile(builder, "generic/gen_cu.go")
+}
+
+func getFrames(method *parser.Method) (chatFrame, userFrame string) {
+	returnVals := goodErrReturns(method.Return)
+	for _, param := range getParamNamesArray(method.Params) {
+		switch param {
+		case "chatId":
+			chatFrame = fmt.Sprintf(FrameProperty, "chat", "chat", returnVals)
+		case "userId":
+			userFrame = fmt.Sprintf(FrameProperty, "user", "user", returnVals)
+		}
+	}
+	return
+}
+
+func getIdParams(chatFrame, userFrame string) (inputIdParam, fetchedIdParam string) {
+	switch {
+	case chatFrame != "" && userFrame != "":
+		inputIdParam = "chat, user chatUnion"
+		fetchedIdParam = "chatId, userId"
+	case chatFrame != "":
+		inputIdParam = "chat chatUnion"
+		fetchedIdParam = "chatId"
+	case userFrame != "":
+		inputIdParam = "user chatUnion"
+		fetchedIdParam = "userId"
+	}
+	return
 }
 
 const predefinedCU = `
@@ -95,24 +135,33 @@ func getIdByUnion[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion) (int64,
 `
 
 type contextHelpers struct {
-	FuncName      string
-	FuncParams    string
-	FuncReturn    string
-	FilledParams  string
-	DefaultValues string
-	DocString     string
+	FuncName     string
+	FuncParams   string
+	FuncReturn   string
+	FilledParams string
+	// DefaultValues   string
+	ChatFrame       string
+	UserFrame       string
+	InputIdParams   string
+	FetchedIdParams string
 }
+
+// chatId, err := getIdByUnion(ctx, chat)
+// 	if err != nil {
+// 		return {{.DefaultValues}}
+// 	}
+const FrameProperty = `
+%sId, err := getIdByUnion(ctx, %s)
+	if err != nil {return %s}
+`
 
 const helperFuncsCU = `
 // {{.FuncName}} is a generic helper for ext.Context.{{.FuncName}} method.
-func {{.FuncName}}[chatUnion ChatUnion] (ctx *ext.Context, chat chatUnion, {{.FuncParams}}) ({{.FuncReturn}}) {
-	chatId, err := getIdByUnion(ctx, chat)
-	if err != nil {
-		return {{.DefaultValues}}
-	}
-	return ctx.{{.FuncName}}(chatId, {{.FilledParams}})
-}
-`
+func {{.FuncName}}[chatUnion ChatUnion] (ctx *ext.Context, {{.InputIdParams}}, {{.FuncParams}}) ({{.FuncReturn}}) {
+	{{.ChatFrame}}
+	{{.UserFrame}}
+	return ctx.{{.FuncName}}({{.FetchedIdParams}}, {{.FilledParams}})
+}`
 
 func writeFile(builder strings.Builder, filename string) error {
 	write, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
@@ -145,7 +194,7 @@ func writeFile(builder strings.Builder, filename string) error {
 	return nil
 }
 
-func filledParams(paramStr string) string {
+func getParamNamesArray(paramStr string) []string {
 	paramArr := make([]string, 0)
 	params := strings.Split(paramStr, ", ")
 	for _, param := range params {
@@ -155,7 +204,11 @@ func filledParams(paramStr string) string {
 		}
 		paramArr = append(paramArr, paramFields[0])
 	}
-	return strings.Join(paramArr, ", ")
+	return paramArr
+}
+
+func filledParams(paramStr string) string {
+	return strings.Join(getParamNamesArray(paramStr), ", ")
 }
 
 func goodErrReturns(s string) string {
