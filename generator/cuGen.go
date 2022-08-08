@@ -71,7 +71,7 @@ func generateCUHelpers() {
 		}
 	}
 	fmt.Println("Writing gen_cu.go for context generic helpers...")
-	writeFile(builder, "generic/gen_cu.go")
+	_ = writeFile(builder, "generic/gen_cu.go")
 }
 
 func getFrames(method *parser.Method) (chatFrame, userFrame string) {

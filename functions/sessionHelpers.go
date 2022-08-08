@@ -19,7 +19,7 @@ func EncodeSessionToString(session *storage.Session) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	encoder.Close()
+	_ = encoder.Close()
 	return buf.String(), nil
 }
 

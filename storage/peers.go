@@ -131,7 +131,7 @@ func cachePeers(id int64) *Peer {
 }
 
 func setCachePeers(id int64, peer *Peer) {
-	cache.Cache.Set(strconv.FormatInt(id, 10), makeBytes(peer))
+	_ = cache.Cache.Set(strconv.FormatInt(id, 10), makeBytes(peer))
 }
 
 func makeBytes(v interface{}) []byte {

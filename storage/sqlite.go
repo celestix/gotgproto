@@ -29,6 +29,6 @@ func Load(sessionName string) {
 	// db.DB().SetMaxOpenConns(100)
 
 	// Create tables if they don't exist
-	SESSION.AutoMigrate(&Session{}, &Peer{})
+	_ = SESSION.AutoMigrate(&Session{}, &Peer{})
 
 }

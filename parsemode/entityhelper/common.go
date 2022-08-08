@@ -183,6 +183,7 @@ func (root *EntityRoot) Mention(name string, user tg.InputUserClass) *EntityRoot
 		Length: len(name),
 		UserID: user,
 	})
+	root.String += name
 	return root
 }
 

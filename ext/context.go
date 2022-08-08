@@ -312,7 +312,7 @@ func (ctx *Context) UnbanChatMember(chatId, userId int64) (bool, error) {
 	if peerChatStorage.ID == 0 {
 		return false, ErrPeerNotFound
 	}
-	var chatPeer = &tg.InputPeerChannel{}
+	var chatPeer *tg.InputPeerChannel
 	switch storage.EntityType(peerChatStorage.Type) {
 	case storage.TypeChannel:
 		chatPeer = &tg.InputPeerChannel{
