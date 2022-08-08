@@ -24,12 +24,22 @@ const (
 	SpoilertEntity  entity = 's'
 )
 
+// Combine creates a new entity root and appends the provided string as combined entities to this entity root.
+func Combine(s string, entity1, entity2 entity) *EntityRoot {
+	return startParsing().Combine(s, entity1, entity2)
+}
+
 // Combine function combines the entity1 and entity2 and appends the resultant entity to the EntityRoot.
 func (root *EntityRoot) Combine(s string, entity1, entity2 entity) *EntityRoot {
 	root.setNormalEntity(s, entity1)
 	root.setNormalEntity(s, entity2)
 	root.String += s
 	return root
+}
+
+// CombineToLink creates a new entity root and appends the provided string as combined link entities to this entity root.
+func CombineToLink(text, link string, entity entity) *EntityRoot {
+	return startParsing().CombineToLink(text, link, entity)
 }
 
 // CombineToLink function combines the given entity to the link entity of the EntityRoot.
@@ -170,18 +180,32 @@ func (root *EntityRoot) Plain(text string) *EntityRoot {
 	return root
 }
 
-// Mention creates a new entity root and appends the provided string as a mention to this entity root.
-func Mention(text string, user interface{}) *EntityRoot {
-	return startParsing().Mention(text, user)
+// BotMention creates a new entity root and appends the provided string as a mention to this entity root.
+func BotMention(text string, user interface{}) *EntityRoot {
+	return startParsing().BotMention(text, user)
 }
 
-// Mention creates a telegram user mention link with the provided user and text to display.
-func (root *EntityRoot) Mention(text string, user interface{}) *EntityRoot {
+// BotMention creates a telegram user mention link with the provided user and text to display.
+//
+// NOTE: This method works for bots only
+func (root *EntityRoot) BotMention(text string, user interface{}) *EntityRoot {
 	switch user := user.(type) {
 	case int, int64:
 		return root.Link(text, fmt.Sprintf("tg://user?id=%d", user))
 	case string:
 		return root.Link(text, fmt.Sprintf("tg://resolve?domain=%s", strings.TrimPrefix(user, "@")))
+	}
+	return root
+}
+
+func RawEntity(entity tg.MessageEntityClass) *EntityRoot {
+	return startParsing().RawEntity(entity)
+}
+
+func (root *EntityRoot) RawEntity(entity tg.MessageEntityClass) *EntityRoot {
+	root.Entities = append(root.Entities, entity)
+	for i := 1; i <= entity.GetLength(); i++ {
+		root.String += " "
 	}
 	return root
 }
