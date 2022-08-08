@@ -162,8 +162,27 @@ func Link(text, url string) *EntityRoot {
 
 // Link appends the provided link to the entity root.
 func (root *EntityRoot) Link(text, url string) *EntityRoot {
-	root.Entities = append(root.Entities, &tg.MessageEntityTextURL{Offset: len(root.String), Length: len(text), URL: url})
+	root.Entities = append(root.Entities, &tg.MessageEntityTextURL{
+		Offset: len(root.String),
+		Length: len(text),
+		URL:    url,
+	})
 	root.String += text
+	return root
+}
+
+// Mention creates a new entity root and appends the provided string as a mention to this entity root.
+func Mention(name string, user tg.InputUserClass) *EntityRoot {
+	return startParsing().Mention(name, user)
+}
+
+// Mention appends the provided mention to the entity root.
+func (root *EntityRoot) Mention(name string, user tg.InputUserClass) *EntityRoot {
+	root.Entities = append(root.Entities, &tg.InputMessageEntityMentionName{
+		Offset: len(root.String),
+		Length: len(name),
+		UserID: user,
+	})
 	return root
 }
 

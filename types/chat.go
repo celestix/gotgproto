@@ -23,6 +23,12 @@ type EffectiveChat interface {
 	IsAChat() bool
 	// Use this method to check if the effective chat is a user.
 	IsAUser() bool
+	// Use this method to get InputUserClass
+	GetInputUser() tg.InputUserClass
+	// Use this method to get InputUserClass
+	GetInputChannel() tg.InputChannelClass
+	// Use this method to get InputUserClass
+	GetInputPeer() tg.InputPeerClass
 }
 
 // EmptyUC implements EffectiveChat interface for empty chats.
@@ -38,6 +44,24 @@ func (*EmptyUC) GetID() int64 {
 // Always 0 for EmptyUC
 func (*EmptyUC) GetAccessHash() int64 {
 	return 0
+}
+
+// Use this method to get InputUserClass
+// Always nil for EmptyUC
+func (*EmptyUC) GetInputUser() tg.InputUserClass {
+	return nil
+}
+
+// Use this method to get InputChannelClass
+// Always nil for EmptyUC
+func (*EmptyUC) GetInputChannel() tg.InputChannelClass {
+	return nil
+}
+
+// Use this method to get InputPeerClass
+// Always nil for EmptyUC
+func (*EmptyUC) GetInputPeer() tg.InputPeerClass {
+	return nil
 }
 
 // IsAChannel returns true for a channel.
@@ -69,6 +93,28 @@ func (u *User) GetID() int64 {
 // Use this method to get access hash of the effective chat.
 func (u *User) GetAccessHash() int64 {
 	return u.AccessHash
+}
+
+// Use this method to get InputUserClass
+func (v *User) GetInputUser() tg.InputUserClass {
+	return &tg.InputUser{
+		UserID:     v.ID,
+		AccessHash: v.AccessHash,
+	}
+}
+
+// Use this method to get InputChannelClass
+// Always nil for User
+func (*User) GetInputChannel() tg.InputChannelClass {
+	return nil
+}
+
+// Use this method to get InputPeerClass
+func (v *User) GetInputPeer() tg.InputPeerClass {
+	return &tg.InputPeerUser{
+		UserID:     v.ID,
+		AccessHash: v.AccessHash,
+	}
 }
 
 // IsAChannel returns true for a channel.
@@ -104,6 +150,28 @@ func (u *Channel) GetAccessHash() int64 {
 	return u.AccessHash
 }
 
+// Use this method to get InputUserClass
+// Always nil for Channel
+func (*Channel) GetInputUser() tg.InputUserClass {
+	return nil
+}
+
+// Use this method to get InputChannelClass
+func (v *Channel) GetInputChannel() tg.InputChannelClass {
+	return &tg.InputChannel{
+		ChannelID:  v.ID,
+		AccessHash: v.AccessHash,
+	}
+}
+
+// Use this method to get InputPeerClass
+func (v *Channel) GetInputPeer() tg.InputPeerClass {
+	return &tg.InputPeerChannel{
+		ChannelID:  v.ID,
+		AccessHash: v.AccessHash,
+	}
+}
+
 // IsAChannel returns true for a channel.
 func (*Channel) IsAChannel() bool {
 	return true
@@ -135,6 +203,25 @@ func (u *Chat) GetID() int64 {
 // Use this method to get access hash of the effective chat.
 func (*Chat) GetAccessHash() int64 {
 	return 0
+}
+
+// Use this method to get InputUserClass
+// Always nil for Chat
+func (*Chat) GetInputUser() tg.InputUserClass {
+	return nil
+}
+
+// Use this method to get InputChannelClass
+// Always nil for Chat
+func (*Chat) GetInputChannel() tg.InputChannelClass {
+	return nil
+}
+
+// Use this method to get InputPeerClass
+func (v *Chat) GetInputPeer() tg.InputPeerClass {
+	return &tg.InputPeerChat{
+		ChatID: v.ID,
+	}
 }
 
 // IsAChannel returns true for a channel.
