@@ -49,6 +49,16 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, e *tg.Entities, update
 		// Silently add catched entities to *tg.Entities
 		if err == nil {
 			if value, ok := diff.(*tg.UpdatesDifference); ok {
+				for _, vu := range value.Chats {
+					switch chat := vu.(type) {
+					case *tg.Chat:
+						go storage.AddPeer(chat.ID, storage.DefaultAccessHash, storage.TypeChat, storage.DefaultUsername)
+						e.Chats[chat.ID] = chat
+					case *tg.Channel:
+						go storage.AddPeer(chat.ID, chat.AccessHash, storage.TypeChannel, chat.Username)
+						e.Channels[chat.ID] = chat
+					}
+				}
 				for _, vu := range value.Users {
 					user, ok := vu.AsNotEmpty()
 					if !ok {

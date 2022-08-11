@@ -481,6 +481,7 @@ func (ctx *Context) DeleteMessages(chatId int64, messageIDs []int) error {
 				ChannelID:  peer.ID,
 				AccessHash: peer.AccessHash,
 			},
+			ID: messageIDs,
 		})
 		return err
 	case storage.TypeUser:
