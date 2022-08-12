@@ -3,6 +3,7 @@ package entityhelper
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gotd/td/tg"
 )
@@ -44,7 +45,7 @@ func CombineToLink(text, link string, entity entity) *EntityRoot {
 
 // CombineToLink function combines the given entity to the link entity of the EntityRoot.
 func (root *EntityRoot) CombineToLink(text, link string, entity entity) *EntityRoot {
-	root.Entities = append(root.Entities, &tg.MessageEntityTextURL{Offset: len(root.String), Length: len(text), URL: link})
+	root.Entities = append(root.Entities, &tg.MessageEntityTextURL{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(text), URL: link})
 	root.setNormalEntity(text, entity)
 	root.String += text
 	return root
@@ -53,17 +54,17 @@ func (root *EntityRoot) CombineToLink(text, link string, entity entity) *EntityR
 func (root *EntityRoot) setNormalEntity(s string, e entity) {
 	switch e {
 	case BoldEntity:
-		root.Entities = append(root.Entities, &tg.MessageEntityBold{Offset: len(root.String), Length: len(s)})
+		root.Entities = append(root.Entities, &tg.MessageEntityBold{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	case ItalicEntity:
-		root.Entities = append(root.Entities, &tg.MessageEntityItalic{Offset: len(root.String), Length: len(s)})
+		root.Entities = append(root.Entities, &tg.MessageEntityItalic{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	case UnderlineEntity:
-		root.Entities = append(root.Entities, &tg.MessageEntityUnderline{Offset: len(root.String), Length: len(s)})
+		root.Entities = append(root.Entities, &tg.MessageEntityUnderline{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	case CodeEntity:
-		root.Entities = append(root.Entities, &tg.MessageEntityCode{Offset: len(root.String), Length: len(s)})
+		root.Entities = append(root.Entities, &tg.MessageEntityCode{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	case StrikeEntity:
-		root.Entities = append(root.Entities, &tg.MessageEntityStrike{Offset: len(root.String), Length: len(s)})
+		root.Entities = append(root.Entities, &tg.MessageEntityStrike{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	case SpoilertEntity:
-		root.Entities = append(root.Entities, &tg.MessageEntitySpoiler{Offset: len(root.String), Length: len(s)})
+		root.Entities = append(root.Entities, &tg.MessageEntitySpoiler{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	}
 }
 
@@ -90,7 +91,7 @@ func Bold(s string) *EntityRoot {
 
 // Bold appends the provided string as bold to the entity root.
 func (root *EntityRoot) Bold(s string) *EntityRoot {
-	root.Entities = append(root.Entities, &tg.MessageEntityBold{Offset: len(root.String), Length: len(s)})
+	root.Entities = append(root.Entities, &tg.MessageEntityBold{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	root.String += s
 	return root
 }
@@ -102,7 +103,7 @@ func Italic(s string) *EntityRoot {
 
 // Italic appends the provided string as italic to the entity root.
 func (root *EntityRoot) Italic(s string) *EntityRoot {
-	root.Entities = append(root.Entities, &tg.MessageEntityItalic{Offset: len(root.String), Length: len(s)})
+	root.Entities = append(root.Entities, &tg.MessageEntityItalic{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	root.String += s
 	return root
 }
@@ -114,7 +115,7 @@ func Underline(s string) *EntityRoot {
 
 // Underline appends the provided string as underline to the entity root.
 func (root *EntityRoot) Underline(s string) *EntityRoot {
-	root.Entities = append(root.Entities, &tg.MessageEntityUnderline{Offset: len(root.String), Length: len(s)})
+	root.Entities = append(root.Entities, &tg.MessageEntityUnderline{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	root.String += s
 	return root
 }
@@ -126,7 +127,7 @@ func Code(s string) *EntityRoot {
 
 // Code appends the provided string as code/mono to the entity root.
 func (root *EntityRoot) Code(s string) *EntityRoot {
-	root.Entities = append(root.Entities, &tg.MessageEntityCode{Offset: len(root.String), Length: len(s)})
+	root.Entities = append(root.Entities, &tg.MessageEntityCode{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	root.String += s
 	return root
 }
@@ -138,7 +139,7 @@ func Strike(s string) *EntityRoot {
 
 // Strike appends the provided string as strike to the entity root.
 func (root *EntityRoot) Strike(s string) *EntityRoot {
-	root.Entities = append(root.Entities, &tg.MessageEntityStrike{Offset: len(root.String), Length: len(s)})
+	root.Entities = append(root.Entities, &tg.MessageEntityStrike{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	root.String += s
 	return root
 }
@@ -150,7 +151,7 @@ func Spoiler(s string) *EntityRoot {
 
 // Spoiler appends the provided string as spoiler to the entity root.
 func (root *EntityRoot) Spoiler(s string) *EntityRoot {
-	root.Entities = append(root.Entities, &tg.MessageEntitySpoiler{Offset: len(root.String), Length: len(s)})
+	root.Entities = append(root.Entities, &tg.MessageEntitySpoiler{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(s)})
 	root.String += s
 	return root
 }
@@ -163,8 +164,8 @@ func Link(text, url string) *EntityRoot {
 // Link appends the provided link to the entity root.
 func (root *EntityRoot) Link(text, url string) *EntityRoot {
 	root.Entities = append(root.Entities, &tg.MessageEntityTextURL{
-		Offset: len(root.String),
-		Length: len(text),
+		Offset: utf8.RuneCountInString(root.String),
+		Length: utf8.RuneCountInString(text),
 		URL:    url,
 	})
 	root.String += text
@@ -179,8 +180,8 @@ func Mention(name string, user tg.InputUserClass) *EntityRoot {
 // Mention appends the provided mention to the entity root.
 func (root *EntityRoot) Mention(name string, user tg.InputUserClass) *EntityRoot {
 	root.Entities = append(root.Entities, &tg.InputMessageEntityMentionName{
-		Offset: len(root.String),
-		Length: len(name),
+		Offset: utf8.RuneCountInString(root.String),
+		Length: utf8.RuneCountInString(name),
 		UserID: user,
 	})
 	root.String += name
@@ -194,8 +195,8 @@ func Plain(s string) *EntityRoot {
 
 // Plain appends the provided text to the entity root as it is.
 func (root *EntityRoot) Plain(text string) *EntityRoot {
-	// root.Entities = append(root.Entities, &tg.MessageEntityUnknown{Offset: len(root.String), Length: len(text)})
-	// root.Offset = len(root.String)
+	// root.Entities = append(root.Entities, &tg.MessageEntityUnknown{Offset: utf8.RuneCountInString(root.String), Length: utf8.RuneCountInString(text)})
+	// root.Offset = utf8.RuneCountInString(root.String)
 	root.String += text
 	return root
 }
