@@ -26,6 +26,8 @@ const (
 	StringSession
 	// TelethonSession is used as SessionType when you want to log in through the string session made by telethon - a Python MTProto library.
 	TelethonSession
+	// PyrogramSession is used as SessionType when you want to log in through the string session made by pyrogram - a Python MTProto library.
+	PyrogramSession
 )
 
 // NewSession creates a new session with provided name string and SessionType.
@@ -44,6 +46,17 @@ func (s *SessionName) GetName() string {
 // GetData is used for retrieving session data through provided SessionName type.
 func (s *SessionName) GetData() ([]byte, error) {
 	switch s.sessionType {
+	case PyrogramSession:
+		storage.Load("pyrogram.session")
+		sd, err := DecodePyrogramSession(s.name)
+		if err != nil {
+			return nil, err
+		}
+		data, err := json.Marshal(jsonData{
+			Version: storage.LatestVersion,
+			Data:    *sd,
+		})
+		return data, err
 	case TelethonSession:
 		storage.Load("telethon.session")
 		sd, err := session.TelethonSession(s.name)
