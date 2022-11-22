@@ -179,7 +179,7 @@ func (ctx *Context) SendReaction(chatId int64, request *tg.MessagesSendReactionR
 		request.Peer = functions.GetInputPeerClassFromId(chatId)
 	}
 	var m = &tg.Message{}
-	m.Message = request.Reaction
+	// m.Message = request.Reaction
 	u, err := ctx.Client.MessagesSendReaction(ctx, request)
 	return functions.ReturnNewMessageWithError(m, u, err)
 }
@@ -373,7 +373,7 @@ func (ctx *Context) AddChatMembers(chatId int64, userIds []int64, forwardLimit i
 // Edit peers in peer folder¹
 //
 // Links:
-//  1) https://core.telegram.org/api/folders#peer-folders
+//  1. https://core.telegram.org/api/folders#peer-folders
 func (ctx *Context) ArchiveChats(chatIds []int64) (bool, error) {
 	chatPeers := make([]tg.InputPeerClass, len(chatIds))
 	for i, chatId := range chatIds {
@@ -405,7 +405,7 @@ func (ctx *Context) ArchiveChats(chatIds []int64) (bool, error) {
 // Edit peers in peer folder¹
 //
 // Links:
-//  1) https://core.telegram.org/api/folders#peer-folders
+//  1. https://core.telegram.org/api/folders#peer-folders
 func (ctx *Context) UnarchiveChats(chatIds []int64) (bool, error) {
 	chatPeers := make([]tg.InputPeerClass, len(chatIds))
 	for i, chatId := range chatIds {
@@ -437,7 +437,7 @@ func (ctx *Context) UnarchiveChats(chatIds []int64) (bool, error) {
 // Create a supergroup/channel¹.
 //
 // Links:
-//  1) https://core.telegram.org/api/channel
+//  1. https://core.telegram.org/api/channel
 func (ctx *Context) CreateChannel(title, about string, broadcast bool) (*tg.Channel, error) {
 	return functions.CreateChannel(ctx, ctx.Client, title, about, broadcast)
 }

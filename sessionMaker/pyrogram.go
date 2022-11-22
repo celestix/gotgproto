@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 
 	"github.com/gotd/td/session"
-	"github.com/gotd/td/tg"
 	"github.com/pkg/errors"
 )
 
@@ -71,7 +70,7 @@ func decodeStringSession(data []byte) (*session.Data, error) {
 		DC:        int(dc),
 		AuthKey:   key[:],
 		AuthKeyID: id[:],
-		Config: tg.Config{
+		Config: session.Config{
 			TestMode: testMode,
 		},
 	}, nil
