@@ -227,3 +227,14 @@ func DemoteChatMember[chatUnion ChatUnion](ctx *ext.Context, chat, user chatUnio
 
 	return ctx.DemoteChatMember(chatId, userId, opts)
 }
+
+// GetUserProfilePhotos is a generic helper for ext.Context.GetUserProfilePhotos method.
+func GetUserProfilePhotos[chatUnion ChatUnion](ctx *ext.Context, user chatUnion, opts *tg.PhotosGetUserPhotosRequest) ([]tg.PhotoClass, error) {
+
+	userId, err := getIdByUnion(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return ctx.GetUserProfilePhotos(userId, opts)
+}

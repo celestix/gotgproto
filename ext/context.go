@@ -560,6 +560,28 @@ func (ctx *Context) ResolveUsername(username string) (types.EffectiveChat, error
 	return functions.ExtractContactResolvedPeer(ctx.Client.ContactsResolveUsername(ctx, strings.TrimPrefix(username, "@")))
 }
 
+// GetUserProfilePhotos invokes method photos.getUserPhotos#91cd32a8 returning error if any. Returns the list of user photos.
+func (ctx *Context) GetUserProfilePhotos(userId int64, opts *tg.PhotosGetUserPhotosRequest) ([]tg.PhotoClass, error) {
+	peerUser := storage.GetPeerById(userId)
+	if peerUser.ID == 0 {
+		return nil, ErrPeerNotFound
+	}
+	if opts == nil {
+		opts = &tg.PhotosGetUserPhotosRequest{}
+	}
+	opts.UserID = &tg.InputUser{
+		UserID:     userId,
+		AccessHash: peerUser.AccessHash,
+	}
+	p, err := ctx.Client.PhotosGetUserPhotos(ctx, &tg.PhotosGetUserPhotosRequest{
+		UserID: nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return p.GetPhotos(), nil
+}
+
 // ExportSessionString returns session of authorized account in the form of string.
 // Note: This session string can be used to log back in with the help of gotgproto.
 // Check sessionMaker.SessionType for more information about it.

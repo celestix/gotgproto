@@ -27,7 +27,7 @@ var (
 	Sender *message.Sender
 )
 
-const VERSION = "v1.0.0-beta09"
+const VERSION = "v1.0.0-beta9"
 
 type ClientHelper struct {
 	// Unique Telegram Application ID, get it from https://my.telegram.org/apps.
@@ -105,7 +105,7 @@ func (ch *ClientHelper) CreateClient(ctx context.Context, opts *telegram.Options
 	client := telegram.NewClient(ch.AppID, ch.ApiHash, *opts)
 	if !ch.DisableCopyright {
 		fmt.Printf(`
-GoTGProto %s, Copyright (C) 2022 Anony <github.com/anonyindian>
+GoTGProto %s, Copyright (C) 2023 Anony <github.com/anonyindian>
 Licensed under the terms of GNU General Public License v3
 
 `, VERSION)
@@ -122,7 +122,7 @@ Licensed under the terms of GNU General Public License v3
 				client: authClient,
 			},
 				auth.SendCodeOptions{})
-			if err := IfAuthNecessary(authClient, ctx, authFlow); err != nil {
+			if err := IfAuthNecessary(authClient, ctx, Flow(authFlow)); err != nil {
 				return err
 			}
 			// if err := authClient.IfNecessary(ctx, authFlow); err != nil {
