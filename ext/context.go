@@ -574,7 +574,7 @@ func (ctx *Context) GetUserProfilePhotos(userId int64, opts *tg.PhotosGetUserPho
 		AccessHash: peerUser.AccessHash,
 	}
 	p, err := ctx.Client.PhotosGetUserPhotos(ctx, &tg.PhotosGetUserPhotosRequest{
-		UserID: nil,
+		UserID: opts.UserID,
 	})
 	if err != nil {
 		return nil, err
