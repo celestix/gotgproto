@@ -7,9 +7,10 @@ import (
 	"log"
 	"runtime/debug"
 
-	"github.com/anonyindian/gotgproto"
 	"github.com/anonyindian/gotgproto/ext"
 	"github.com/anonyindian/gotgproto/storage"
+	"github.com/gotd/td/telegram"
+	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
 	"go.uber.org/multierr"
 )
@@ -23,14 +24,24 @@ var (
 	SkipCurrentGroup = errors.New("skipped")
 )
 
-type CustomDispatcher struct {
+type Dispatcher interface {
+	Initialize(context.Context, *telegram.Client, *tg.User)
+	Handle(context.Context, tg.UpdatesClass) error
+	AddHandler(Handler)
+	AddHandlerToGroup(Handler, int)
+}
+
+type NativeDispatcher struct {
+	client *tg.Client
+	self   *tg.User
+	sender *message.Sender
 	// Panic handles all the panics that occur during handler execution.
 	Panic PanicHandler
 	// Error handles all the unknown errors which are returned by the handler callback functions.
 	Error ErrorHandler
-	// handlerMap is used for internal functionality of CustomDispatcher.
+	// handlerMap is used for internal functionality of NativeDispatcher.
 	handlerMap map[int][]Handler
-	// handlerGroups is used for internal functionality of CustomDispatcher.
+	// handlerGroups is used for internal functionality of NativeDispatcher.
 	handlerGroups []int
 }
 
@@ -38,8 +49,8 @@ type PanicHandler func(*ext.Context, *ext.Update, string)
 type ErrorHandler func(*ext.Context, *ext.Update, string) error
 
 // MakeDispatcher creates new custom dispatcher which process and handles incoming updates.
-func MakeDispatcher() *CustomDispatcher {
-	return &CustomDispatcher{
+func NewNativeDispatcher() *NativeDispatcher {
+	return &NativeDispatcher{
 		handlerMap: make(map[int][]Handler),
 	}
 }
@@ -53,8 +64,14 @@ func (u *entities) short() {
 	u.Channels = make(map[int64]*tg.Channel, 0)
 }
 
+func (dp *NativeDispatcher) Initialize(ctx context.Context, client *telegram.Client, self *tg.User) {
+	dp.client = client.API()
+	dp.sender = message.NewSender(dp.client)
+	dp.self = self
+}
+
 // Handle function handles all the incoming updates, map entities and dispatches updates for further handling.
-func (dp *CustomDispatcher) Handle(ctx context.Context, updates tg.UpdatesClass) error {
+func (dp *NativeDispatcher) Handle(ctx context.Context, updates tg.UpdatesClass) error {
 	var (
 		e    entities
 		upds []tg.UpdateClass
@@ -94,16 +111,16 @@ func (dp *CustomDispatcher) Handle(ctx context.Context, updates tg.UpdatesClass)
 	return err
 }
 
-func (dp *CustomDispatcher) dispatch(ctx context.Context, e tg.Entities, update tg.UpdateClass) error {
+func (dp *NativeDispatcher) dispatch(ctx context.Context, e tg.Entities, update tg.UpdateClass) error {
 	if update == nil {
 		return nil
 	}
-	return dp.handleUpdates(ctx, e, update)
+	return dp.handleUpdate(ctx, e, update)
 }
 
-func (dp *CustomDispatcher) handleUpdates(ctx context.Context, e tg.Entities, update tg.UpdateClass) error {
-	u := ext.GetNewUpdate(ctx, gotgproto.Api, &e, update)
-	c := ext.NewContext(ctx, gotgproto.Api, gotgproto.Self, gotgproto.Sender, &e)
+func (dp *NativeDispatcher) handleUpdate(ctx context.Context, e tg.Entities, update tg.UpdateClass) error {
+	u := ext.GetNewUpdate(ctx, dp.client, &e, update)
+	c := ext.NewContext(ctx, dp.client, dp.self, dp.sender, &e)
 	var err error
 	defer func() {
 		if r := recover(); r != nil {

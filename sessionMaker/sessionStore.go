@@ -2,7 +2,6 @@ package sessionMaker
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/anonyindian/gotgproto/storage"
@@ -48,7 +47,6 @@ func (f *SessionStorage) LoadSession(_ context.Context) ([]byte, error) {
 // StoreSession stores session to sqlite storage.
 func (f *SessionStorage) StoreSession(_ context.Context, data []byte) error {
 	if f == nil {
-		fmt.Println("hm")
 		return errors.New("nil session storage is invalid")
 	}
 	f.mux.Lock()

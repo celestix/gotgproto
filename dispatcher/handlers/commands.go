@@ -30,21 +30,24 @@ func NewCommand(name string, response CallbackResponse) Command {
 }
 
 func (c Command) CheckUpdate(ctx *ext.Context, u *ext.Update) error {
-	if u.EffectiveMessage == nil || u.EffectiveMessage.Message == "" {
+	m := u.EffectiveMessage
+	if m == nil || m.Message == "" {
 		return nil
 	}
-	if !c.Outgoing && u.EffectiveMessage.Out {
+	if !c.Outgoing && m.Out {
 		return nil
 	}
 	if c.UpdateFilters != nil && !c.UpdateFilters(u) {
 		return nil
 	}
-	args := strings.Fields(strings.ToLower(u.EffectiveMessage.Message))
+	arg := strings.ToLower(
+		strings.Fields(m.Message)[0],
+	)
 	for _, prefix := range c.Prefix {
-		if args[0][0] == byte(prefix) {
-			if args[0][1:] == c.Name {
+		if arg[0] == byte(prefix) {
+			if arg[1:] == c.Name {
 				return c.Callback(ctx, u)
-			} else if split := strings.Split(args[0][1:], "@"); split[0] == c.Name {
+			} else if split := strings.Split(arg[1:], "@"); split[0] == c.Name {
 				if split[1] == strings.ToLower(ctx.Self.Username) {
 					return c.Callback(ctx, u)
 				}

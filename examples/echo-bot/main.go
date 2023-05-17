@@ -1,8 +1,8 @@
 package main
 
 import (
-	"context"
 	"fmt"
+	"log"
 
 	"github.com/anonyindian/gotgproto"
 	"github.com/anonyindian/gotgproto/dispatcher"
@@ -10,45 +10,45 @@ import (
 	"github.com/anonyindian/gotgproto/dispatcher/handlers/filters"
 	"github.com/anonyindian/gotgproto/ext"
 	"github.com/anonyindian/gotgproto/sessionMaker"
-	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
 )
 
 func main() {
-	// custom dispatcher handles all the updates
-	dp := dispatcher.MakeDispatcher()
-	gotgproto.StartClient(&gotgproto.ClientHelper{
-		// Get AppID from https://my.telegram.org/apps
-		AppID: 1234567,
-		// Get ApiHash from https://my.telegram.org/apps
-		ApiHash: "API_HASH_HERE",
-		// Session of your client
-		// sessionName: name of the session / session string in case of TelethonSession or StringSession
-		// sessionType: can be any out of Session, TelethonSession, StringSession.
-		Session: sessionMaker.NewSession("echobot", sessionMaker.Session),
-		// Get BotToken from @botfather
+	// Type of client to login to, can be of 2 types:
+	// 1.) Bot  (Fill BotToken in this case)
+	// 2.) User (Fill Phone in this case)
+	clientType := gotgproto.ClientType{
 		BotToken: "BOT_TOKEN_HERE",
-		// Make sure to specify custom dispatcher here in order to enjoy gotgproto's update handling
-		Dispatcher: dp,
-		// Add the handlers, post functions in TaskFunc
-		TaskFunc: func(ctx context.Context, client *telegram.Client) error {
-			// Command Handler for /start
-			dp.AddHandler(handlers.NewCommand("start", start))
-			// Callback Query Handler with prefix filter for recieving specific query
-			dp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("cb_"), buttonCallback))
-			// This Message Handler will call our echo function on new messages
-			dp.AddHandlerToGroup(handlers.NewMessage(filters.Message.Text, echo), 1)
-			go func() {
-				for {
-					if gotgproto.Sender != nil {
-						fmt.Println("Client has been started...")
-						break
-					}
-				}
-			}()
-			return nil
+	}
+
+	client, err := gotgproto.NewClient(
+		// Get AppID from https://my.telegram.org/apps
+		123456,
+		// Get ApiHash from https://my.telegram.org/apps
+		"API_HASH_HERE",
+		// ClientType, as we defined above
+		clientType,
+		// Optional parameters of client
+		&gotgproto.ClientOpts{
+			Session: sessionMaker.NewSession("echobot", sessionMaker.Session),
 		},
-	})
+	)
+	if err != nil {
+		log.Fatalln("failed to start client:", err)
+	}
+
+	dispatcher := client.Dispatcher
+
+	// Command Handler for /start
+	dispatcher.AddHandler(handlers.NewCommand("start", start))
+	// Callback Query Handler with prefix filter for recieving specific query
+	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("cb_"), buttonCallback))
+	// This Message Handler will call our echo function on new messages
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(filters.Message.Text, echo), 1)
+
+	fmt.Printf("client (@%s) has been started...\n", client.Self.Username)
+
+	client.Idle()
 }
 
 // callback function for /start command

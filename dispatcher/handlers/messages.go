@@ -24,13 +24,14 @@ func NewMessage(filters filters.MessageFilter, response CallbackResponse) Messag
 }
 
 func (m Message) CheckUpdate(ctx *ext.Context, u *ext.Update) error {
-	if u.EffectiveMessage == nil {
+	msg := u.EffectiveMessage
+	if msg == nil {
 		return nil
 	}
-	if !m.Outgoing && u.EffectiveMessage.Out {
+	if !m.Outgoing && msg.Out {
 		return nil
 	}
-	if m.Filters != nil && !m.Filters(u.EffectiveMessage) {
+	if m.Filters != nil && !m.Filters(msg) {
 		return nil
 	}
 	if m.UpdateFilters != nil && !m.UpdateFilters(u) {
