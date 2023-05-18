@@ -3,7 +3,7 @@ module github.com/anonyindian/gotgproto
 go 1.19
 
 require (
-	github.com/allegro/bigcache v1.2.1
+	github.com/AnimeKaizoku/cacher v1.0.1
 	github.com/go-faster/errors v0.6.1
 	github.com/gotd/td v0.81.0
 	github.com/pkg/errors v0.9.1

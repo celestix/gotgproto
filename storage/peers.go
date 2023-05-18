@@ -1,12 +1,9 @@
 package storage
 
 import (
-	"bytes"
-	"encoding/gob"
-	"strconv"
 	"sync"
 
-	"github.com/anonyindian/gotgproto/storage/cache"
+	"github.com/AnimeKaizoku/cacher"
 	"github.com/gotd/td/tg"
 )
 
@@ -18,9 +15,10 @@ type Peer struct {
 }
 
 var (
-	StoreInMemory = false
-	peerLock      = &sync.RWMutex{}
-	PeerMemoryMap = map[int64]*Peer{}
+	storeInMemory = false
+	peerLock      = sync.RWMutex{}
+	peerCache     *cacher.Cacher[int64, *Peer]
+	// PeerMemoryMap = map[int64]*Peer{}
 )
 
 type EntityType int
@@ -43,45 +41,52 @@ const (
 
 func AddPeer(iD, accessHash int64, peerType EntityType, userName string) {
 	peer := &Peer{ID: iD, AccessHash: accessHash, Type: peerType.GetInt(), Username: userName}
-	if StoreInMemory {
-		peerLock.Lock()
-		PeerMemoryMap[iD] = peer
-		peerLock.Unlock()
+	if storeInMemory {
+		peerCache.Set(iD, peer)
+		// PeerMemoryMap[iD] = peer
 	} else {
-		go setCachePeers(iD, peer)
+		// go setCachePeers(iD, peer)
+		go peerCache.Set(iD, peer)
 		tx := SESSION.Begin()
 		tx.Save(peer)
+		peerLock.Lock()
+		defer peerLock.Unlock()
 		tx.Commit()
 	}
 }
 
 // GetPeerById finds the provided id in the peer storage and return it if found.
 func GetPeerById(iD int64) *Peer {
-	if StoreInMemory {
-		peerLock.RLock()
-		peer := PeerMemoryMap[iD]
-		if peer == nil {
+	if storeInMemory {
+		// peer := PeerMemoryMap[iD]
+		peer, ok := peerCache.Get(iD)
+		if !ok {
 			return &Peer{}
 		}
-		peerLock.RUnlock()
 		return peer
 	} else {
-		data, err := cache.Cache.Get(strconv.FormatInt(iD, 10))
-		if err != nil {
+		peer, ok := peerCache.Get(iD)
+		if !ok {
 			return cachePeers(iD)
 		}
-		var peer Peer
-		_ = gob.NewDecoder(bytes.NewBuffer(data)).Decode(&peer)
-		return &peer
+		return peer
+		// data := []byte{}
+		// data, err := cache.Cache.Get(strconv.FormatInt(iD, 10))
+		// if err != nil {
+		// 	return cachePeers(iD)
+		// }
+		// var peer Peer
+		// _ = gob.NewDecoder(bytes.NewBuffer(data)).Decode(&peer)
+		// return &peer
 	}
 }
 
 // GetPeerByUsername finds the provided username in the peer storage and return it if found.
 func GetPeerByUsername(username string) *Peer {
-	if StoreInMemory {
-		for key, peer := range PeerMemoryMap {
+	if storeInMemory {
+		for _, peer := range peerCache.GetAll() {
 			if peer.Username == username {
-				return PeerMemoryMap[key]
+				return peer
 			}
 		}
 	} else {
@@ -126,16 +131,7 @@ func getInputPeerFromStoragePeer(peer *Peer) tg.InputPeerClass {
 func cachePeers(id int64) *Peer {
 	var peer = Peer{}
 	SESSION.Where("id = ?", id).Find(&peer)
-	setCachePeers(id, &peer)
+	// setCachePeers(id, &peer)
+	peerCache.Set(id, &peer)
 	return &peer
-}
-
-func setCachePeers(id int64, peer *Peer) {
-	_ = cache.Cache.Set(strconv.FormatInt(id, 10), makeBytes(peer))
-}
-
-func makeBytes(v interface{}) []byte {
-	buf := bytes.Buffer{}
-	_ = gob.NewEncoder(&buf).Encode(v)
-	return buf.Bytes()
 }

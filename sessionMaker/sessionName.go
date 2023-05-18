@@ -47,7 +47,7 @@ func (s *SessionName) GetName() string {
 func (s *SessionName) GetData() ([]byte, error) {
 	switch s.sessionType {
 	case PyrogramSession:
-		storage.Load("pyrogram.session")
+		storage.Load("pyrogram.session", false)
 		sd, err := DecodePyrogramSession(s.name)
 		if err != nil {
 			return nil, err
@@ -58,7 +58,7 @@ func (s *SessionName) GetData() ([]byte, error) {
 		})
 		return data, err
 	case TelethonSession:
-		storage.Load("telethon.session")
+		storage.Load("telethon.session", false)
 		sd, err := session.TelethonSession(s.name)
 		if err != nil {
 			return nil, err
@@ -69,7 +69,7 @@ func (s *SessionName) GetData() ([]byte, error) {
 		})
 		return data, err
 	case StringSession:
-		storage.Load("gotgproto.session")
+		storage.Load("gotgproto.session", false)
 		sd, err := functions.DecodeStringToSession(s.name)
 		if err != nil {
 			return nil, err
@@ -81,7 +81,7 @@ func (s *SessionName) GetData() ([]byte, error) {
 		// })
 		return sd.Data, err
 	default:
-		storage.Load(fmt.Sprintf("%s.session", s.name))
+		storage.Load(fmt.Sprintf("%s.session", s.name), false)
 		sFD := storage.GetSession()
 		return sFD.Data, nil
 	}

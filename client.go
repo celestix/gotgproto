@@ -90,7 +90,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	var sessionStorage telegram.SessionStorage
 	if opts.Session == nil || opts.Session.GetName() == ":memory:" {
 		sessionStorage = &session.StorageMemory{}
-		storage.StoreInMemory = true
+		storage.Load("", true)
 	} else {
 		sessionStorage = &sessionMaker.SessionStorage{
 			Session: opts.Session,
@@ -183,7 +183,7 @@ func (c *Client) initialize(ctx context.Context) error {
 	c.Dispatcher.Initialize(ctx, c.Client, self)
 
 	if c.Session.GetName() == "" {
-		storage.Load("new.session")
+		storage.Load("new.session", false)
 	}
 	// notify channel that client is up
 	close(c.started)
