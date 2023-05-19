@@ -1,9 +1,11 @@
 package filters
 
 import (
-	"github.com/anonyindian/gotgproto/functions"
-	"github.com/gotd/td/tg"
 	"regexp"
+
+	"github.com/anonyindian/gotgproto/functions"
+	"github.com/anonyindian/gotgproto/types"
+	"github.com/gotd/td/tg"
 )
 
 type messageFilters struct{}
@@ -15,7 +17,7 @@ func (*messageFilters) All(_ *tg.Message) bool {
 
 // Chat allows the tg.Message update to process if it is from that particular chat.
 func (*messageFilters) Chat(chatId int64) MessageFilter {
-	return func(m *tg.Message) bool {
+	return func(m *types.Message) bool {
 		return functions.GetChatIdFromPeer(m.PeerID) == chatId
 	}
 }
@@ -31,8 +33,8 @@ func (*messageFilters) Regex(rString string) (MessageFilter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return func(m *tg.Message) bool {
-		return r.MatchString(m.Message)
+	return func(m *types.Message) bool {
+		return r.MatchString(m.Text)
 	}, nil
 }
 

@@ -31,7 +31,7 @@ func NewCommand(name string, response CallbackResponse) Command {
 
 func (c Command) CheckUpdate(ctx *ext.Context, u *ext.Update) error {
 	m := u.EffectiveMessage
-	if m == nil || m.Message == "" {
+	if m == nil || m.Text == "" {
 		return nil
 	}
 	if !c.Outgoing && m.Out {
@@ -41,7 +41,7 @@ func (c Command) CheckUpdate(ctx *ext.Context, u *ext.Update) error {
 		return nil
 	}
 	arg := strings.ToLower(
-		strings.Fields(m.Message)[0],
+		strings.Fields(m.Text)[0],
 	)
 	for _, prefix := range c.Prefix {
 		if arg[0] == byte(prefix) {

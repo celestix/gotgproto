@@ -80,6 +80,10 @@ type ClientOpts struct {
 	DisableCopyright bool
 	// Session info of the authenticated user, use sessionMaker.NewSession function to fill this field.
 	Session *sessionMaker.SessionName
+	// Setting this field to true will lead to automatically fetch the reply_to_message for a new message update.
+	//
+	// Set to `false` by default.
+	AutoFetchReply bool
 }
 
 func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*Client, error) {
@@ -97,7 +101,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		}
 	}
 
-	d := dispatcher.NewNativeDispatcher()
+	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply)
 
 	client := telegram.NewClient(appId, apiHash, telegram.Options{
 		DCList:         opts.DCList,

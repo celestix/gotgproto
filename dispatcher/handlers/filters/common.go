@@ -2,6 +2,7 @@ package filters
 
 import (
 	"github.com/anonyindian/gotgproto/ext"
+	"github.com/anonyindian/gotgproto/types"
 	"github.com/gotd/td/tg"
 )
 
@@ -15,7 +16,7 @@ var (
 
 type (
 	UpdateFilter              func(u *ext.Update) bool
-	MessageFilter             func(m *tg.Message) bool
+	MessageFilter             func(m *types.Message) bool
 	CallbackQueryFilter       func(cbq *tg.UpdateBotCallbackQuery) bool
 	InlineQueryFilter         func(iq *tg.UpdateBotInlineQuery) bool
 	PendingJoinRequestsFilter func(cjr *tg.UpdatePendingJoinRequests) bool

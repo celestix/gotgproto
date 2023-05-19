@@ -32,9 +32,10 @@ type Dispatcher interface {
 }
 
 type NativeDispatcher struct {
-	client *tg.Client
-	self   *tg.User
-	sender *message.Sender
+	client   *tg.Client
+	self     *tg.User
+	sender   *message.Sender
+	setReply bool
 	// Panic handles all the panics that occur during handler execution.
 	Panic PanicHandler
 	// Error handles all the unknown errors which are returned by the handler callback functions.
@@ -49,9 +50,10 @@ type PanicHandler func(*ext.Context, *ext.Update, string)
 type ErrorHandler func(*ext.Context, *ext.Update, string) error
 
 // MakeDispatcher creates new custom dispatcher which process and handles incoming updates.
-func NewNativeDispatcher() *NativeDispatcher {
+func NewNativeDispatcher(setReply bool) *NativeDispatcher {
 	return &NativeDispatcher{
 		handlerMap: make(map[int][]Handler),
+		setReply:   setReply,
 	}
 }
 
@@ -120,7 +122,12 @@ func (dp *NativeDispatcher) dispatch(ctx context.Context, e tg.Entities, update 
 
 func (dp *NativeDispatcher) handleUpdate(ctx context.Context, e tg.Entities, update tg.UpdateClass) error {
 	u := ext.GetNewUpdate(ctx, dp.client, &e, update)
-	c := ext.NewContext(ctx, dp.client, dp.self, dp.sender, &e)
+	go func() {
+		if u.EffectiveMessage != nil && dp.setReply {
+			u.EffectiveMessage.SetRepliedToMessage(ctx, dp.client)
+		}
+	}()
+	c := ext.NewContext(ctx, dp.client, dp.self, dp.sender, &e, dp.setReply)
 	var err error
 	defer func() {
 		if r := recover(); r != nil {

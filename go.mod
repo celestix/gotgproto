@@ -1,6 +1,6 @@
 module github.com/anonyindian/gotgproto
 
-go 1.19
+go 1.20
 
 require (
 	github.com/AnimeKaizoku/cacher v1.0.1

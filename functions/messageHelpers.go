@@ -3,8 +3,26 @@ package functions
 import (
 	"context"
 
+	"github.com/anonyindian/gotgproto/errors"
+	"github.com/anonyindian/gotgproto/storage"
 	"github.com/gotd/td/tg"
 )
+
+func GetMessages(ctx context.Context, raw *tg.Client, chatId int64, mids []tg.InputMessageClass) (tg.MessageClassArray, error) {
+	peer := storage.GetPeerById(chatId)
+	if peer.ID == 0 {
+		return nil, errors.ErrPeerNotFound
+	}
+	switch storage.EntityType(peer.Type) {
+	case storage.TypeChannel:
+		return GetChannelMessages(ctx, raw, &tg.InputChannel{
+			ChannelID:  peer.ID,
+			AccessHash: peer.AccessHash,
+		}, mids)
+	default:
+		return GetChatMessages(ctx, raw, mids)
+	}
+}
 
 func GetChannelMessages(context context.Context, client *tg.Client, peer tg.InputChannelClass, messageIds []tg.InputMessageClass) (tg.MessageClassArray, error) {
 	messages, err := client.ChannelsGetMessages(context, &tg.ChannelsGetMessagesRequest{

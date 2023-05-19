@@ -2,42 +2,10 @@ package functions
 
 import (
 	"context"
-	"errors"
 
 	"github.com/anonyindian/gotgproto/storage"
-	"github.com/anonyindian/gotgproto/types"
 	"github.com/gotd/td/tg"
 )
-
-func ExtractContactResolvedPeer(p *tg.ContactsResolvedPeer, err error) (types.EffectiveChat, error) {
-	if err != nil {
-		return &types.EmptyUC{}, err
-	}
-	go SavePeersFromClassArray(p.Chats, p.Users)
-	switch p.Peer.(type) {
-	case *tg.PeerChannel:
-		if p.Chats == nil || len(p.Chats) == 0 {
-			return &types.EmptyUC{}, errors.New("peer info not found in the resolved Chats")
-		}
-		switch chat := p.Chats[0].(type) {
-		case *tg.Channel:
-			var c = types.Channel(*chat)
-			return &c, nil
-		case *tg.ChannelForbidden:
-			return &types.EmptyUC{}, errors.New("peer could not be resolved because Channel Forbidden")
-		}
-	case *tg.PeerUser:
-		if p.Users == nil || len(p.Users) == 0 {
-			return &types.EmptyUC{}, errors.New("peer info not found in the resolved Chats")
-		}
-		switch user := p.Users[0].(type) {
-		case *tg.User:
-			var c = types.User(*user)
-			return &c, nil
-		}
-	}
-	return &types.EmptyUC{}, errors.New("contact not found")
-}
 
 // GetChatIdFromPeer returns the chat/user id from the provided tg.PeerClass.
 func GetChatIdFromPeer(peer tg.PeerClass) int64 {

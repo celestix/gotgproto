@@ -14,7 +14,7 @@ import (
 // Update contains all the data related to an update.
 type Update struct {
 	// EffectiveMessage is the tg.Message of current update.
-	EffectiveMessage *tg.Message
+	EffectiveMessage *types.Message
 	// CallbackQuery is the tg.UpdateBotCallbackQuery of current update.
 	CallbackQuery *tg.UpdateBotCallbackQuery
 	// InlineQuery is the tg.UpdateInlineBotCallbackQuery of current update.
@@ -40,7 +40,7 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, e *tg.Entities, update
 	case *tg.UpdateNewMessage:
 		m, ok := update.GetMessage().(*tg.Message)
 		if ok {
-			u.EffectiveMessage = m
+			u.EffectiveMessage = types.ConstructMessage(m)
 		}
 		diff, err := client.UpdatesGetDifference(ctx, &tg.UpdatesGetDifferenceRequest{
 			Pts:  update.Pts - 1,
@@ -72,7 +72,7 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, e *tg.Entities, update
 	case message.AnswerableMessageUpdate:
 		m, ok := update.GetMessage().(*tg.Message)
 		if ok {
-			u.EffectiveMessage = m
+			u.EffectiveMessage = types.ConstructMessage(m)
 		}
 	case *tg.UpdateBotCallbackQuery:
 		u.CallbackQuery = update
@@ -92,7 +92,7 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, e *tg.Entities, update
 func (u *Update) Args() []string {
 	switch {
 	case u.EffectiveMessage != nil:
-		return strings.Fields(u.EffectiveMessage.Message)
+		return strings.Fields(u.EffectiveMessage.Text)
 	case u.CallbackQuery != nil:
 		return strings.Fields(string(u.CallbackQuery.Data))
 	case u.InlineQuery != nil:
