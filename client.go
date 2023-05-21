@@ -6,8 +6,10 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sync"
 
 	"github.com/anonyindian/gotgproto/dispatcher"
+	intErrors "github.com/anonyindian/gotgproto/errors"
 	"github.com/anonyindian/gotgproto/ext"
 	"github.com/anonyindian/gotgproto/functions"
 	"github.com/anonyindian/gotgproto/sessionMaker"
@@ -41,19 +43,29 @@ type Client struct {
 	Resolver dcs.Resolver
 	// Whether to show the copyright line in console or no.
 	DisableCopyright bool
+	// Logger is instance of zap.Logger. No logs by default.
+	Logger *zap.Logger
+
 	// Session info of the authenticated user, use sessionMaker.NewSession function to fill this field.
-	Session *sessionMaker.SessionName
+	sessionStorage session.Storage
 
 	// Self contains details of logged in user in the form of *tg.User.
 	Self *tg.User
 
+	// Code for the language used on the device's OS, ISO 639-1 standard.
+	SystemLangCode string
+	// Code for the language used on the client, ISO 639-1 standard.
+	ClientLangCode string
+
 	clientType     ClientType
 	ctx            context.Context
 	err            error
-	started        chan int
 	autoFetchReply bool
-
+	cancel         context.CancelFunc
+	running        bool
 	*telegram.Client
+	appId   int
+	apiHash string
 }
 
 // Type of client to login to, can be of 2 types:
@@ -95,6 +107,7 @@ type ClientOpts struct {
 	ClientLangCode string
 }
 
+// NewClient creates a new gotgproto client and logs in to telegram.
 func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*Client, error) {
 	if opts == nil {
 		opts = &ClientOpts{
@@ -115,45 +128,60 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 
 	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply)
 
-	client := telegram.NewClient(appId, apiHash, telegram.Options{
-		DCList:         opts.DCList,
-		UpdateHandler:  d,
-		SessionStorage: sessionStorage,
-		Logger:         opts.Logger,
-		Device: telegram.DeviceConfig{
-			DeviceModel:    "GoTGProto",
-			SystemVersion:  runtime.GOOS,
-			AppVersion:     VERSION,
-			SystemLangCode: opts.SystemLangCode,
-			LangCode:       opts.ClientLangCode,
-		},
-	})
+	// client := telegram.NewClient(appId, apiHash, telegram.Options{
+	// 	DCList:         opts.DCList,
+	// 	UpdateHandler:  d,
+	// 	SessionStorage: sessionStorage,
+	// 	Logger:         opts.Logger,
+	// 	Device: telegram.DeviceConfig{
+	// 		DeviceModel:    "GoTGProto",
+	// 		SystemVersion:  runtime.GOOS,
+	// 		AppVersion:     VERSION,
+	// 		SystemLangCode: opts.SystemLangCode,
+	// 		LangCode:       opts.ClientLangCode,
+	// 	},
+	// })
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 
-	c := &Client{
+	c := Client{
 		Resolver:         opts.Resolver,
 		PublicKeys:       opts.PublicKeys,
 		DC:               opts.DC,
 		DCList:           opts.DCList,
 		DisableCopyright: opts.DisableCopyright,
-		Session:          opts.Session,
+		Logger:           opts.Logger,
+		SystemLangCode:   opts.SystemLangCode,
+		ClientLangCode:   opts.ClientLangCode,
 		Dispatcher:       d,
-		Client:           client,
+		sessionStorage:   sessionStorage,
 		clientType:       cType,
 		ctx:              ctx,
-		started:          make(chan int),
 		autoFetchReply:   opts.AutoFetchReply,
+		cancel:           cancel,
+		appId:            appId,
+		apiHash:          apiHash,
 	}
 
 	c.printCredit()
 
-	go func(c *Client) {
-		c.err = client.Run(ctx, c.initialize)
-	}(c)
-	// wait till client starts
-	<-c.started
-	return c, nil
+	return &c, c.Start()
+}
+
+func (c *Client) initTelegramClient() {
+	c.Client = telegram.NewClient(c.appId, c.apiHash, telegram.Options{
+		DCList:         c.DCList,
+		UpdateHandler:  c.Dispatcher,
+		SessionStorage: c.sessionStorage,
+		Logger:         c.Logger,
+		Device: telegram.DeviceConfig{
+			DeviceModel:    "GoTGProto",
+			SystemVersion:  runtime.GOOS,
+			AppVersion:     VERSION,
+			SystemLangCode: c.SystemLangCode,
+			LangCode:       c.ClientLangCode,
+		},
+	})
 }
 
 func (c *Client) login() error {
@@ -192,37 +220,39 @@ Licensed under the terms of GNU General Public License v3
 	}
 }
 
-func (c *Client) initialize(ctx context.Context) error {
-	err := c.login()
-	if err != nil {
-		return err
+func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error {
+	return func(ctx context.Context) error {
+		err := c.login()
+		if err != nil {
+			return err
+		}
+		self, err := c.Client.Self(ctx)
+		if err != nil {
+			return err
+		}
+
+		c.Self = self
+
+		c.Dispatcher.Initialize(ctx, c.Stop, c.Client, self)
+
+		storage.AddPeer(self.ID, self.AccessHash, storage.TypeUser, self.Username)
+
+		// notify channel that client is up
+		wg.Done()
+		c.running = true
+		<-c.ctx.Done()
+		return c.ctx.Err()
 	}
-
-	self, err := c.Client.Self(ctx)
-	if err != nil {
-		return err
-	}
-	c.Self = self
-
-	c.Dispatcher.Initialize(ctx, c.Client, self)
-
-	if c.Session.GetName() == "" {
-		storage.Load("new.session", false)
-	}
-
-	storage.AddPeer(self.ID, self.AccessHash, storage.TypeUser, self.Username)
-
-	// notify channel that client is up
-	close(c.started)
-
-	<-c.ctx.Done()
-	return c.ctx.Err()
 }
 
+// EncodeSessionToString encodes the client session to a string in base64.
+//
+// Note: You must not share this string with anyone, it contains auth details for your logged in account.
 func (c *Client) ExportStringSession() (string, error) {
 	return functions.EncodeSessionToString(storage.GetSession())
 }
 
+// Idle keeps the current goroutined blocked until the client is stopped.
 func (c *Client) Idle() error {
 	<-c.ctx.Done()
 	return c.err
@@ -243,4 +273,45 @@ func (c *Client) CreateContext() *ext.Context {
 		},
 		c.autoFetchReply,
 	)
+}
+
+// Stop cancels the context.Context being used for the client
+// and stops it.
+//
+// Notes:
+//
+// 1.) Client.Idle() will exit if this method is called.
+//
+// 2.) You can call Client.Start() to start the client again
+// if it was stopped using this method.
+func (c *Client) Stop() {
+	c.cancel()
+	c.running = false
+}
+
+// Start connects the client to telegram servers and logins.
+// It will return error if the client is already running.
+func (c *Client) Start() error {
+	if c.running {
+		return intErrors.ErrClientAlreadyRunning
+	}
+	if c.ctx.Err() == context.Canceled {
+		c.ctx, c.cancel = context.WithCancel(context.Background())
+	}
+	c.initTelegramClient()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func(c *Client) {
+		c.err = c.Run(c.ctx, c.initialize(&wg))
+	}(c)
+	// wait till client starts
+	wg.Wait()
+	return c.err
+}
+
+// RefreshContext casts the new context.Context and telegram session
+// to ext.Context (It may be used after doing Stop and Start calls respectively.)
+func (c *Client) RefreshContext(ctx *ext.Context) {
+	(*ctx).Context = c.ctx
+	(*ctx).Raw = c.API()
 }

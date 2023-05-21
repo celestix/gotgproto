@@ -13,6 +13,8 @@ import (
 type SessionName struct {
 	name        string
 	sessionType SessionType
+	data        []byte
+	err         error
 }
 
 // SessionType is the type of session you want to log in through.
@@ -32,19 +34,15 @@ const (
 
 // NewSession creates a new session with provided name string and SessionType.
 func NewSession(sessionName string, sessionType SessionType) *SessionName {
-	return &SessionName{
+	s := SessionName{
 		name:        sessionName,
 		sessionType: sessionType,
 	}
+	s.data, s.err = s.load()
+	return &s
 }
 
-// GetName is used for retrieving name of the session.
-func (s *SessionName) GetName() string {
-	return s.name
-}
-
-// GetData is used for retrieving session data through provided SessionName type.
-func (s *SessionName) GetData() ([]byte, error) {
+func (s *SessionName) load() ([]byte, error) {
 	switch s.sessionType {
 	case PyrogramSession:
 		storage.Load("pyrogram.session", false)
@@ -81,8 +79,21 @@ func (s *SessionName) GetData() ([]byte, error) {
 		// })
 		return sd.Data, err
 	default:
+		if s.name == "" {
+			s.name = "new"
+		}
 		storage.Load(fmt.Sprintf("%s.session", s.name), false)
 		sFD := storage.GetSession()
 		return sFD.Data, nil
 	}
+}
+
+// GetName is used for retrieving name of the session.
+func (s *SessionName) GetName() string {
+	return s.name
+}
+
+// GetData is used for retrieving session data through provided SessionName type.
+func (s *SessionName) GetData() ([]byte, error) {
+	return s.data, s.err
 }

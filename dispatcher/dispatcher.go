@@ -16,22 +16,26 @@ import (
 )
 
 var (
-	// EndGroups stops iterating over handlers groups if return through handler callback function.
+	// StopClient cancels the context and stops the client if returned through handler callback function.
+	StopClient = errors.New("disconnect")
+
+	// EndGroups stops iterating over handlers groups if returned through handler callback function.
 	EndGroups = errors.New("stopped")
-	// ContinueGroups continues iterating over handlers groups if return through handler callback function.
+	// ContinueGroups continues iterating over handlers groups if returned through handler callback function.
 	ContinueGroups = errors.New("continued")
-	// SkipCurrentGroup skips current group and continues iterating over handlers groups if return through handler callback function.
+	// SkipCurrentGroup skips current group and continues iterating over handlers groups if returned through handler callback function.
 	SkipCurrentGroup = errors.New("skipped")
 )
 
 type Dispatcher interface {
-	Initialize(context.Context, *telegram.Client, *tg.User)
+	Initialize(context.Context, context.CancelFunc, *telegram.Client, *tg.User)
 	Handle(context.Context, tg.UpdatesClass) error
 	AddHandler(Handler)
 	AddHandlerToGroup(Handler, int)
 }
 
 type NativeDispatcher struct {
+	cancel   context.CancelFunc
 	client   *tg.Client
 	self     *tg.User
 	sender   *message.Sender
@@ -66,10 +70,11 @@ func (u *entities) short() {
 	u.Channels = make(map[int64]*tg.Channel, 0)
 }
 
-func (dp *NativeDispatcher) Initialize(ctx context.Context, client *telegram.Client, self *tg.User) {
+func (dp *NativeDispatcher) Initialize(ctx context.Context, cancel context.CancelFunc, client *telegram.Client, self *tg.User) {
 	dp.client = client.API()
 	dp.sender = message.NewSender(dp.client)
 	dp.self = self
+	dp.cancel = cancel
 }
 
 // Handle function handles all the incoming updates, map entities and dispatches updates for further handling.
@@ -148,6 +153,9 @@ func (dp *NativeDispatcher) handleUpdate(ctx context.Context, e tg.Entities, upd
 				return err
 			} else if errors.Is(err, SkipCurrentGroup) {
 				break
+			} else if errors.Is(err, StopClient) {
+				dp.cancel()
+				return nil
 			} else {
 				err = dp.Error(c, u, err.Error())
 				switch err {

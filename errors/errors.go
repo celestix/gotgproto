@@ -3,6 +3,10 @@ package errors
 import "errors"
 
 var (
+	ErrClientAlreadyRunning = errors.New("client is already running")
+)
+
+var (
 	ErrPeerNotFound    = errors.New("peer not found")
 	ErrNotChat         = errors.New("not chat")
 	ErrNotChannel      = errors.New("not channel")

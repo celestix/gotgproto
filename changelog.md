@@ -12,7 +12,11 @@
 - `ext.Update.EffectiveMessage` is of type `*types.Message`
 - Added a new optional field in ClientOpts, named `AutoFetchReply` (setting this field to true will automatically cast ReplyToMessage field)
 - Save peers of logged in user in session, while logging in.
-- Add `client.ExportSessionString()` and `client.CreateContext()` methods to `gotgproto.Client`.
+- Added `client.ExportSessionString()`, `client.RefreshContext(ctx)` and `client.CreateContext()` methods to `gotgproto.Client`.
 - Remove an unintentional display of session data in `Stdout`.
 - Added `SystemLangCode` and `ClientLangCode` optional fields to `gotgproto.Client`.
 - Moved helper methods errors to `errors` package (gotgproto/errors)
+- Added `gotgproto.Client.Stop()` to cancel the running context and stop the client.
+- Added `dispatcher.StopClient` handler error, which if returned through a handler callback will result in stopping the client.
+- Added `gotgproto.Client.Start()` to login and connect to telegram (It's already called by gotgproto.NewClient so no need to call it again. however, it should be used to re-establish a connection once it's closed via `gotgproto.Client.Stop()`)
+- Fixed session database initialisation happening twice per login.
