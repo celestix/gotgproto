@@ -5,14 +5,18 @@ package gotgproto
 import (
 	"context"
 	"fmt"
+	"runtime"
 
 	"github.com/anonyindian/gotgproto/dispatcher"
+	"github.com/anonyindian/gotgproto/ext"
+	"github.com/anonyindian/gotgproto/functions"
 	"github.com/anonyindian/gotgproto/sessionMaker"
 	"github.com/anonyindian/gotgproto/storage"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/telegram/dcs"
+	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -43,10 +47,11 @@ type Client struct {
 	// Self contains details of logged in user in the form of *tg.User.
 	Self *tg.User
 
-	clientType ClientType
-	ctx        context.Context
-	err        error
-	started    chan int
+	clientType     ClientType
+	ctx            context.Context
+	err            error
+	started        chan int
+	autoFetchReply bool
 
 	*telegram.Client
 }
@@ -84,11 +89,18 @@ type ClientOpts struct {
 	//
 	// Set to `false` by default.
 	AutoFetchReply bool
+	// Code for the language used on the device's OS, ISO 639-1 standard.
+	SystemLangCode string
+	// Code for the language used on the client, ISO 639-1 standard.
+	ClientLangCode string
 }
 
 func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*Client, error) {
 	if opts == nil {
-		opts = &ClientOpts{}
+		opts = &ClientOpts{
+			SystemLangCode: "en",
+			ClientLangCode: "en",
+		}
 	}
 
 	var sessionStorage telegram.SessionStorage
@@ -108,6 +120,13 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		UpdateHandler:  d,
 		SessionStorage: sessionStorage,
 		Logger:         opts.Logger,
+		Device: telegram.DeviceConfig{
+			DeviceModel:    "GoTGProto",
+			SystemVersion:  runtime.GOOS,
+			AppVersion:     VERSION,
+			SystemLangCode: opts.SystemLangCode,
+			LangCode:       opts.ClientLangCode,
+		},
 	})
 
 	ctx := context.Background()
@@ -124,6 +143,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		clientType:       cType,
 		ctx:              ctx,
 		started:          make(chan int),
+		autoFetchReply:   opts.AutoFetchReply,
 	}
 
 	c.printCredit()
@@ -189,6 +209,9 @@ func (c *Client) initialize(ctx context.Context) error {
 	if c.Session.GetName() == "" {
 		storage.Load("new.session", false)
 	}
+
+	storage.AddPeer(self.ID, self.AccessHash, storage.TypeUser, self.Username)
+
 	// notify channel that client is up
 	close(c.started)
 
@@ -196,7 +219,28 @@ func (c *Client) initialize(ctx context.Context) error {
 	return c.ctx.Err()
 }
 
+func (c *Client) ExportStringSession() (string, error) {
+	return functions.EncodeSessionToString(storage.GetSession())
+}
+
 func (c *Client) Idle() error {
 	<-c.ctx.Done()
 	return c.err
+}
+
+// CreateContext creates a new pseudo updates context.
+// A context retrieved from this method should be reused.
+func (c *Client) CreateContext() *ext.Context {
+	return ext.NewContext(
+		c.ctx,
+		c.API(),
+		c.Self,
+		message.NewSender(c.API()),
+		&tg.Entities{
+			Users: map[int64]*tg.User{
+				c.Self.ID: c.Self,
+			},
+		},
+		c.autoFetchReply,
+	)
 }

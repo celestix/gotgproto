@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go/format"
 	"html/template"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -18,7 +17,7 @@ var hardCodedReplacements = map[string]string{
 }
 
 func readContextFile() []byte {
-	b, err := ioutil.ReadFile("ext/context.go")
+	b, err := os.ReadFile("ext/context.go")
 	if err != nil {
 		panic("failed to read context file: " + err.Error())
 	}
@@ -110,6 +109,7 @@ package generic
 
 import (
 	"github.com/anonyindian/gotgproto/ext"
+	"github.com/anonyindian/gotgproto/types"
 	"github.com/anonyindian/gotgproto/storage"
 	"github.com/gotd/td/tg"
 )
@@ -151,9 +151,10 @@ type contextHelpers struct {
 }
 
 // chatId, err := getIdByUnion(ctx, chat)
-// 	if err != nil {
-// 		return {{.DefaultValues}}
-// 	}
+//
+//	if err != nil {
+//		return {{.DefaultValues}}
+//	}
 const FrameProperty = `
 %sId, err := getIdByUnion(ctx, %s)
 	if err != nil {return %s}

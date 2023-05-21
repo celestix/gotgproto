@@ -6,6 +6,7 @@ package generic
 import (
 	"github.com/anonyindian/gotgproto/ext"
 	"github.com/anonyindian/gotgproto/storage"
+	"github.com/anonyindian/gotgproto/types"
 	"github.com/gotd/td/tg"
 )
 
@@ -33,7 +34,7 @@ func getIdByUnion[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion) (int64,
 }
 
 // SendMessage is a generic helper for ext.Context.SendMessage method.
-func SendMessage[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request *tg.MessagesSendMessageRequest) (*tg.Message, error) {
+func SendMessage[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request *tg.MessagesSendMessageRequest) (*types.Message, error) {
 
 	chatId, err := getIdByUnion(ctx, chat)
 	if err != nil {
@@ -44,7 +45,7 @@ func SendMessage[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request 
 }
 
 // SendMedia is a generic helper for ext.Context.SendMedia method.
-func SendMedia[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request *tg.MessagesSendMediaRequest) (*tg.Message, error) {
+func SendMedia[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request *tg.MessagesSendMediaRequest) (*types.Message, error) {
 
 	chatId, err := getIdByUnion(ctx, chat)
 	if err != nil {
@@ -77,7 +78,7 @@ func SendInlineBotResult[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, 
 }
 
 // SendReaction is a generic helper for ext.Context.SendReaction method.
-func SendReaction[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request *tg.MessagesSendReactionRequest) (*tg.Message, error) {
+func SendReaction[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request *tg.MessagesSendReactionRequest) (*types.Message, error) {
 
 	chatId, err := getIdByUnion(ctx, chat)
 	if err != nil {
@@ -88,7 +89,7 @@ func SendReaction[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request
 }
 
 // SendMultiMedia is a generic helper for ext.Context.SendMultiMedia method.
-func SendMultiMedia[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request *tg.MessagesSendMultiMediaRequest) (*tg.Message, error) {
+func SendMultiMedia[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request *tg.MessagesSendMultiMediaRequest) (*types.Message, error) {
 
 	chatId, err := getIdByUnion(ctx, chat)
 	if err != nil {
@@ -99,7 +100,7 @@ func SendMultiMedia[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, reque
 }
 
 // EditMessage is a generic helper for ext.Context.EditMessage method.
-func EditMessage[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request *tg.MessagesEditMessageRequest) (*tg.Message, error) {
+func EditMessage[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion, request *tg.MessagesEditMessageRequest) (*types.Message, error) {
 
 	chatId, err := getIdByUnion(ctx, chat)
 	if err != nil {

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/anonyindian/gotgproto/storage"
@@ -12,7 +11,6 @@ import (
 
 // EncodeSessionToString encodes the provided session to a string in base64 using json bytes.
 func EncodeSessionToString(session *storage.Session) (string, error) {
-	fmt.Printf("session.Data: %s\n", string(session.Data))
 	var buf bytes.Buffer
 	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
 	err := json.NewEncoder(encoder).Encode(session)
