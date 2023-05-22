@@ -1,4 +1,4 @@
-# GoTGProto
+# <a href="https://github.com/anonyindian/gotgproto"><img src="./gotgproto.png" width="40px" align="left"></img></a> GoTGProto
 GoTGProto is a helper package for gotd library, It aims to make td's raw functions easy-to-use with the help of features like using session strings, custom helper functions, storing peers and extracting chat or user ids through it etc.
 
 We have an outstanding userbot project going on with GoTGProto, you can check it out by [clicking here](https://github.com/GigaUserbot/GIGA). 
@@ -22,25 +22,34 @@ go get github.com/anonyindian/gotgproto
 You can find various examples in the [examples' directory](./examples/), one of them i.e. authorizing as a user is as follows:
 ```go
 package main
+
 import (
-	"context"
+	"log"
+	
 	"github.com/anonyindian/gotgproto"
-	"github.com/anonyindian/gotgproto/dispatcher"
 	"github.com/anonyindian/gotgproto/sessionMaker"
-	"github.com/gotd/td/telegram"
 )
+
 func main() {
-    dp := dispatcher.MakeDispatcher()
-    gotgproto.StartClient(&gotgproto.ClientHelper{
-		AppID: 1234567,
-		ApiHash: "API_HASH_HERE",
-		Session: sessionMaker.NewSession("session_name", sessionMaker.Session),
+	clientType := gotgproto.ClientType{
 		Phone: "PHONE_NUMBER_HERE",
-		Dispatcher: dp,
-		TaskFunc: func(ctx context.Context, client *telegram.Client) error {
-			return nil
+	}
+	client, err := gotgproto.NewClient(
+		// Get AppID from https://my.telegram.org/apps
+		123456,
+		// Get ApiHash from https://my.telegram.org/apps
+		"API_HASH_HERE",
+		// ClientType, as we defined above
+		clientType,
+		// Optional parameters of client
+		&gotgproto.ClientOpts{
+			Session: sessionMaker.NewSession("echobot", sessionMaker.Session),
 		},
-	})
+	)
+	if err != nil {
+		log.Fatalln("failed to start client:", err)
+	}
+	client.Idle()
 }
 ```
 
