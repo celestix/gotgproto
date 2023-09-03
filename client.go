@@ -105,6 +105,8 @@ type ClientOpts struct {
 	SystemLangCode string
 	// Code for the language used on the client, ISO 639-1 standard.
 	ClientLangCode string
+	// Custom client device
+	Device *telegram.DeviceConfig
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -117,7 +119,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	}
 
 	var sessionStorage telegram.SessionStorage
-	if opts.Session == nil || opts.Session.GetName() == sessionMaker.InMemorySessionName {
+	if opts.Session == nil || opts.Session.GetName() == sessionMaker.InMemorySession {
 		sessionStorage = &session.StorageMemory{}
 		storage.Load("", true)
 	} else {
@@ -165,73 +167,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 
 	c.printCredit()
 
-	return &c, c.Start(nil)
-}
-
-func NewClientWithCustomDevice(
-	appId int,
-	apiHash string,
-	cType ClientType,
-	opts *ClientOpts,
-	device *telegram.DeviceConfig,
-) (*Client, error) {
-	if opts == nil {
-		opts = &ClientOpts{
-			SystemLangCode: "en",
-			ClientLangCode: "en",
-		}
-	}
-
-	var sessionStorage telegram.SessionStorage
-	if opts.Session == nil || opts.Session.GetName() == ":memory:" {
-		sessionStorage = &session.StorageMemory{}
-		storage.Load("", true)
-	} else {
-		sessionStorage = &sessionMaker.SessionStorage{
-			Session: opts.Session,
-		}
-	}
-
-	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply)
-
-	// client := telegram.NewClient(appId, apiHash, telegram.Options{
-	// 	DCList:         opts.DCList,
-	// 	UpdateHandler:  d,
-	// 	SessionStorage: sessionStorage,
-	// 	Logger:         opts.Logger,
-	// 	Device: telegram.DeviceConfig{
-	// 		DeviceModel:    "GoTGProto",
-	// 		SystemVersion:  runtime.GOOS,
-	// 		AppVersion:     VERSION,
-	// 		SystemLangCode: opts.SystemLangCode,
-	// 		LangCode:       opts.ClientLangCode,
-	// 	},
-	// })
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	c := Client{
-		Resolver:         opts.Resolver,
-		PublicKeys:       opts.PublicKeys,
-		DC:               opts.DC,
-		DCList:           opts.DCList,
-		DisableCopyright: opts.DisableCopyright,
-		Logger:           opts.Logger,
-		SystemLangCode:   opts.SystemLangCode,
-		ClientLangCode:   opts.ClientLangCode,
-		Dispatcher:       d,
-		sessionStorage:   sessionStorage,
-		clientType:       cType,
-		ctx:              ctx,
-		autoFetchReply:   opts.AutoFetchReply,
-		cancel:           cancel,
-		appId:            appId,
-		apiHash:          apiHash,
-	}
-
-	c.printCredit()
-
-	return &c, c.Start(device)
+	return &c, c.Start(opts)
 }
 
 func (c *Client) initTelegramClient(device *telegram.DeviceConfig) {
@@ -360,14 +296,14 @@ func (c *Client) Stop() {
 
 // Start connects the client to telegram servers and logins.
 // It will return error if the client is already running.
-func (c *Client) Start(device *telegram.DeviceConfig) error {
+func (c *Client) Start(opts *ClientOpts) error {
 	if c.running {
 		return intErrors.ErrClientAlreadyRunning
 	}
 	if c.ctx.Err() == context.Canceled {
 		c.ctx, c.cancel = context.WithCancel(context.Background())
 	}
-	c.initTelegramClient(device)
+	c.initTelegramClient(opts.Device)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func(c *Client) {
