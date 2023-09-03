@@ -117,7 +117,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	}
 
 	var sessionStorage telegram.SessionStorage
-	if opts.Session == nil || opts.Session.GetName() == ":memory:" {
+	if opts.Session == nil || opts.Session.GetName() == sessionMaker.InMemorySessionName {
 		sessionStorage = &session.StorageMemory{}
 		storage.Load("", true)
 	} else {
