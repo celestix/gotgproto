@@ -165,22 +165,91 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 
 	c.printCredit()
 
-	return &c, c.Start()
+	return &c, c.Start(nil)
 }
 
-func (c *Client) initTelegramClient() {
-	c.Client = telegram.NewClient(c.appId, c.apiHash, telegram.Options{
-		DCList:         c.DCList,
-		UpdateHandler:  c.Dispatcher,
-		SessionStorage: c.sessionStorage,
-		Logger:         c.Logger,
-		Device: telegram.DeviceConfig{
+func NewClientWithCustomDevice(
+	appId int,
+	apiHash string,
+	cType ClientType,
+	opts *ClientOpts,
+	device *telegram.DeviceConfig,
+) (*Client, error) {
+	if opts == nil {
+		opts = &ClientOpts{
+			SystemLangCode: "en",
+			ClientLangCode: "en",
+		}
+	}
+
+	var sessionStorage telegram.SessionStorage
+	if opts.Session == nil || opts.Session.GetName() == ":memory:" {
+		sessionStorage = &session.StorageMemory{}
+		storage.Load("", true)
+	} else {
+		sessionStorage = &sessionMaker.SessionStorage{
+			Session: opts.Session,
+		}
+	}
+
+	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply)
+
+	// client := telegram.NewClient(appId, apiHash, telegram.Options{
+	// 	DCList:         opts.DCList,
+	// 	UpdateHandler:  d,
+	// 	SessionStorage: sessionStorage,
+	// 	Logger:         opts.Logger,
+	// 	Device: telegram.DeviceConfig{
+	// 		DeviceModel:    "GoTGProto",
+	// 		SystemVersion:  runtime.GOOS,
+	// 		AppVersion:     VERSION,
+	// 		SystemLangCode: opts.SystemLangCode,
+	// 		LangCode:       opts.ClientLangCode,
+	// 	},
+	// })
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := Client{
+		Resolver:         opts.Resolver,
+		PublicKeys:       opts.PublicKeys,
+		DC:               opts.DC,
+		DCList:           opts.DCList,
+		DisableCopyright: opts.DisableCopyright,
+		Logger:           opts.Logger,
+		SystemLangCode:   opts.SystemLangCode,
+		ClientLangCode:   opts.ClientLangCode,
+		Dispatcher:       d,
+		sessionStorage:   sessionStorage,
+		clientType:       cType,
+		ctx:              ctx,
+		autoFetchReply:   opts.AutoFetchReply,
+		cancel:           cancel,
+		appId:            appId,
+		apiHash:          apiHash,
+	}
+
+	c.printCredit()
+
+	return &c, c.Start(device)
+}
+
+func (c *Client) initTelegramClient(device *telegram.DeviceConfig) {
+	if device == nil {
+		device = &telegram.DeviceConfig{
 			DeviceModel:    "GoTGProto",
 			SystemVersion:  runtime.GOOS,
 			AppVersion:     VERSION,
 			SystemLangCode: c.SystemLangCode,
 			LangCode:       c.ClientLangCode,
-		},
+		}
+	}
+	c.Client = telegram.NewClient(c.appId, c.apiHash, telegram.Options{
+		DCList:         c.DCList,
+		UpdateHandler:  c.Dispatcher,
+		SessionStorage: c.sessionStorage,
+		Logger:         c.Logger,
+		Device:         *device,
 	})
 }
 
@@ -291,14 +360,14 @@ func (c *Client) Stop() {
 
 // Start connects the client to telegram servers and logins.
 // It will return error if the client is already running.
-func (c *Client) Start() error {
+func (c *Client) Start(device *telegram.DeviceConfig) error {
 	if c.running {
 		return intErrors.ErrClientAlreadyRunning
 	}
 	if c.ctx.Err() == context.Canceled {
 		c.ctx, c.cancel = context.WithCancel(context.Background())
 	}
-	c.initTelegramClient()
+	c.initTelegramClient(device)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func(c *Client) {
