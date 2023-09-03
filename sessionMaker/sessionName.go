@@ -30,6 +30,8 @@ const (
 	TelethonSession
 	// PyrogramSession is used as SessionType when you want to log in through the string session made by pyrogram - a Python MTProto library.
 	PyrogramSession
+	// InMemorySession is used when it is necessary to indicate that this session is in memory
+	InMemorySession = ":memory:"
 )
 
 // NewSession creates a new session with provided name string and SessionType.
@@ -42,50 +44,88 @@ func NewSession(sessionName string, sessionType SessionType) *SessionName {
 	return &s
 }
 
+func NewInMemorySession(sessionValue string, sessionType SessionType) *SessionName {
+	s := SessionName{
+		name:        InMemorySession,
+		sessionType: sessionType,
+	}
+	s.data, s.err = s.loadInMemory(sessionValue)
+	return &s
+}
+
 func (s *SessionName) load() ([]byte, error) {
 	switch s.sessionType {
 	case PyrogramSession:
 		storage.Load("pyrogram.session", false)
-		sd, err := DecodePyrogramSession(s.name)
-		if err != nil {
-			return nil, err
-		}
-		data, err := json.Marshal(jsonData{
-			Version: storage.LatestVersion,
-			Data:    *sd,
-		})
-		return data, err
+		return loadByPyrogramSession(s.name)
 	case TelethonSession:
 		storage.Load("telethon.session", false)
-		sd, err := session.TelethonSession(s.name)
-		if err != nil {
-			return nil, err
-		}
-		data, err := json.Marshal(jsonData{
-			Version: storage.LatestVersion,
-			Data:    *sd,
-		})
-		return data, err
+		return loadByTelethonSession(s.name)
 	case StringSession:
 		storage.Load("gotgproto.session", false)
-		sd, err := functions.DecodeStringToSession(s.name)
-		if err != nil {
-			return nil, err
-		}
-
-		// data, err := json.Marshal(jsonData{
-		// 	Version: latestVersion,
-		// 	Data:    *sd,
-		// })
-		return sd.Data, err
+		return loadByStringSession(s.name)
 	default:
-		if s.name == "" {
-			s.name = "new"
-		}
-		storage.Load(fmt.Sprintf("%s.session", s.name), false)
-		sFD := storage.GetSession()
-		return sFD.Data, nil
+		return loadByDefault(s.name)
 	}
+}
+
+func (s *SessionName) loadInMemory(sessionValue string) ([]byte, error) {
+	switch s.sessionType {
+	case PyrogramSession:
+		return loadByPyrogramSession(sessionValue)
+	case TelethonSession:
+		return loadByTelethonSession(sessionValue)
+	case StringSession:
+		return loadByStringSession(sessionValue)
+	default:
+		return loadByDefault(sessionValue)
+	}
+}
+
+func loadByPyrogramSession(value string) ([]byte, error) {
+	sd, err := DecodePyrogramSession(value)
+	if err != nil {
+		return nil, err
+	}
+	data, err := json.Marshal(jsonData{
+		Version: storage.LatestVersion,
+		Data:    *sd,
+	})
+	return data, err
+}
+
+func loadByTelethonSession(value string) ([]byte, error) {
+	sd, err := session.TelethonSession(value)
+	if err != nil {
+		return nil, err
+	}
+	data, err := json.Marshal(jsonData{
+		Version: storage.LatestVersion,
+		Data:    *sd,
+	})
+	return data, err
+}
+
+func loadByStringSession(value string) ([]byte, error) {
+	sd, err := functions.DecodeStringToSession(value)
+	if err != nil {
+		return nil, err
+	}
+
+	// data, err := json.Marshal(jsonData{
+	// 	Version: latestVersion,
+	// 	Data:    *sd,
+	// })
+	return sd.Data, err
+}
+
+func loadByDefault(value string) ([]byte, error) {
+	if value == "" {
+		value = "new"
+	}
+	storage.Load(fmt.Sprintf("%s.session", value), false)
+	sFD := storage.GetSession()
+	return sFD.Data, nil
 }
 
 // GetName is used for retrieving name of the session.

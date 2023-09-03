@@ -105,6 +105,8 @@ type ClientOpts struct {
 	SystemLangCode string
 	// Code for the language used on the client, ISO 639-1 standard.
 	ClientLangCode string
+	// Custom client device
+	Device *telegram.DeviceConfig
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -117,7 +119,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	}
 
 	var sessionStorage telegram.SessionStorage
-	if opts.Session == nil || opts.Session.GetName() == ":memory:" {
+	if opts.Session == nil || opts.Session.GetName() == sessionMaker.InMemorySession {
 		sessionStorage = &session.StorageMemory{}
 		storage.Load("", true)
 	} else {
@@ -165,22 +167,25 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 
 	c.printCredit()
 
-	return &c, c.Start()
+	return &c, c.Start(opts)
 }
 
-func (c *Client) initTelegramClient() {
-	c.Client = telegram.NewClient(c.appId, c.apiHash, telegram.Options{
-		DCList:         c.DCList,
-		UpdateHandler:  c.Dispatcher,
-		SessionStorage: c.sessionStorage,
-		Logger:         c.Logger,
-		Device: telegram.DeviceConfig{
+func (c *Client) initTelegramClient(device *telegram.DeviceConfig) {
+	if device == nil {
+		device = &telegram.DeviceConfig{
 			DeviceModel:    "GoTGProto",
 			SystemVersion:  runtime.GOOS,
 			AppVersion:     VERSION,
 			SystemLangCode: c.SystemLangCode,
 			LangCode:       c.ClientLangCode,
-		},
+		}
+	}
+	c.Client = telegram.NewClient(c.appId, c.apiHash, telegram.Options{
+		DCList:         c.DCList,
+		UpdateHandler:  c.Dispatcher,
+		SessionStorage: c.sessionStorage,
+		Logger:         c.Logger,
+		Device:         *device,
 	})
 }
 
@@ -291,14 +296,14 @@ func (c *Client) Stop() {
 
 // Start connects the client to telegram servers and logins.
 // It will return error if the client is already running.
-func (c *Client) Start() error {
+func (c *Client) Start(opts *ClientOpts) error {
 	if c.running {
 		return intErrors.ErrClientAlreadyRunning
 	}
 	if c.ctx.Err() == context.Canceled {
 		c.ctx, c.cancel = context.WithCancel(context.Background())
 	}
-	c.initTelegramClient()
+	c.initTelegramClient(opts.Device)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func(c *Client) {
