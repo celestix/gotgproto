@@ -118,9 +118,23 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		}
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	var sessionStorage telegram.SessionStorage
-	if opts.Session == nil || opts.Session.GetName() == sessionMaker.InMemorySession {
-		sessionStorage = &session.StorageMemory{}
+
+	isInMemory := opts.Session.GetName() == sessionMaker.InMemorySessionName
+	if opts.Session == nil || isInMemory {
+		d, _ := opts.Session.GetData()
+
+		s := session.StorageMemory{}
+		err := s.StoreSession(ctx, d)
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+
+		sessionStorage = &s
+
 		storage.Load("", true)
 	} else {
 		sessionStorage = &sessionMaker.SessionStorage{
@@ -143,8 +157,6 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	// 		LangCode:       opts.ClientLangCode,
 	// 	},
 	// })
-
-	ctx, cancel := context.WithCancel(context.Background())
 
 	c := Client{
 		Resolver:         opts.Resolver,
@@ -255,6 +267,11 @@ func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error 
 // Note: You must not share this string with anyone, it contains auth details for your logged in account.
 func (c *Client) ExportStringSession() (string, error) {
 	return functions.EncodeSessionToString(storage.GetSession())
+}
+
+// GetSession can be used for InMemoryStorage type(eg. Postgres)
+func (c *Client) GetSession() ([]byte, error) {
+	return c.sessionStorage.LoadSession(c.CreateContext())
 }
 
 // Idle keeps the current goroutined blocked until the client is stopped.

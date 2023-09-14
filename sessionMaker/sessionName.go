@@ -30,8 +30,10 @@ const (
 	TelethonSession
 	// PyrogramSession is used as SessionType when you want to log in through the string session made by pyrogram - a Python MTProto library.
 	PyrogramSession
-	// InMemorySession is used when it is necessary to indicate that this session is in memory
-	InMemorySession = ":memory:"
+)
+
+const (
+	InMemorySessionName = ":memory:"
 )
 
 // NewSession creates a new session with provided name string and SessionType.
@@ -44,9 +46,10 @@ func NewSession(sessionName string, sessionType SessionType) *SessionName {
 	return &s
 }
 
+// NewInMemorySession Used for create Session with in memory type
 func NewInMemorySession(sessionValue string, sessionType SessionType) *SessionName {
 	s := SessionName{
-		name:        InMemorySession,
+		name:        InMemorySessionName,
 		sessionType: sessionType,
 	}
 	s.data, s.err = s.loadInMemory(sessionValue)
