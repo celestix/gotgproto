@@ -5,15 +5,13 @@ package gotgproto
 import (
 	"context"
 	"fmt"
-	"runtime"
-	"sync"
-
 	"github.com/anonyindian/gotgproto/dispatcher"
 	intErrors "github.com/anonyindian/gotgproto/errors"
 	"github.com/anonyindian/gotgproto/ext"
 	"github.com/anonyindian/gotgproto/functions"
 	"github.com/anonyindian/gotgproto/sessionMaker"
 	"github.com/anonyindian/gotgproto/storage"
+	"github.com/gotd/contrib/middleware/floodwait"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
@@ -22,6 +20,8 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"runtime"
+	"sync"
 )
 
 const VERSION = "v1.0.0-beta10"
@@ -107,6 +107,8 @@ type ClientOpts struct {
 	ClientLangCode string
 	// Custom client device
 	Device *telegram.DeviceConfig
+	// Custom middlewares
+	Middlewares []telegram.Middleware
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -144,19 +146,23 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 
 	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply)
 
-	// client := telegram.NewClient(appId, apiHash, telegram.Options{
-	// 	DCList:         opts.DCList,
-	// 	UpdateHandler:  d,
-	// 	SessionStorage: sessionStorage,
-	// 	Logger:         opts.Logger,
-	// 	Device: telegram.DeviceConfig{
-	// 		DeviceModel:    "GoTGProto",
-	// 		SystemVersion:  runtime.GOOS,
-	// 		AppVersion:     VERSION,
-	// 		SystemLangCode: opts.SystemLangCode,
-	// 		LangCode:       opts.ClientLangCode,
-	// 	},
-	// })
+	//client := telegram.NewClient(appId, apiHash, telegram.Options{
+	//	DCList:         opts.DCList,
+	//	UpdateHandler: d,
+	//	SessionStorage: sessionStorage,
+	//	Logger:         opts.Logger,
+	//	Device: telegram.DeviceConfig{
+	//		DeviceModel:    "GoTGProto",
+	//		SystemVersion:  runtime.GOOS,
+	//		AppVersion:     VERSION,
+	//		SystemLangCode: opts.SystemLangCode,
+	//		LangCode:       opts.ClientLangCode,
+	//	},
+	//	Middlewares: []telegram.Middleware{
+	//		floodwait.NewSimpleWaiter().WithMaxRetries(25),
+	//		ratelimit.New(rate.Every(100*time.Millisecond), 5),
+	//	},
+	//})
 
 	c := Client{
 		Resolver:         opts.Resolver,
@@ -182,7 +188,10 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	return &c, c.Start(opts)
 }
 
-func (c *Client) initTelegramClient(device *telegram.DeviceConfig) {
+func (c *Client) initTelegramClient(
+	device *telegram.DeviceConfig,
+	middlewares []telegram.Middleware,
+) {
 	if device == nil {
 		device = &telegram.DeviceConfig{
 			DeviceModel:    "GoTGProto",
@@ -198,6 +207,7 @@ func (c *Client) initTelegramClient(device *telegram.DeviceConfig) {
 		SessionStorage: c.sessionStorage,
 		Logger:         c.Logger,
 		Device:         *device,
+		Middlewares:    middlewares,
 	})
 }
 
@@ -269,7 +279,6 @@ func (c *Client) ExportStringSession() (string, error) {
 	return functions.EncodeSessionToString(storage.GetSession())
 }
 
-// GetSession can be used for InMemoryStorage type(eg. Postgres)
 func (c *Client) GetSession() ([]byte, error) {
 	return c.sessionStorage.LoadSession(c.CreateContext())
 }
@@ -320,12 +329,20 @@ func (c *Client) Start(opts *ClientOpts) error {
 	if c.ctx.Err() == context.Canceled {
 		c.ctx, c.cancel = context.WithCancel(context.Background())
 	}
-	c.initTelegramClient(opts.Device)
+	c.initTelegramClient(opts.Device, opts.Middlewares)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func(c *Client) {
-		c.err = c.Run(c.ctx, c.initialize(&wg))
+		waiter := floodwait.NewWaiter()
+		waiterError := waiter.Run(c.ctx, func(ctx context.Context) error {
+			// Client should be started after waiter.
+			return c.Run(ctx, c.initialize(&wg))
+		})
+		if c.err = waiterError; c.err != nil {
+			c.err = errors.Wrap(c.err, "run client")
+		}
 	}(c)
+
 	// wait till client starts
 	wg.Wait()
 	return c.err
