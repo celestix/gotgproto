@@ -145,7 +145,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 
 	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply)
 
-	//client := telegram.NewClient(appId, apiHash, telegram.Options{
+	// client := telegram.NewClient(appId, apiHash, telegram.Options{
 	//	DCList:         opts.DCList,
 	//	UpdateHandler: d,
 	//	SessionStorage: sessionStorage,
