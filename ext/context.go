@@ -669,8 +669,9 @@ func (ctx *Context) GetUserProfilePhotos(userId int64, opts *tg.PhotosGetUserPho
 	return p.GetPhotos(), nil
 }
 
-func (ctx *Context) ForwardMediaGroup() {
-	ctx.Raw.MessagesForwardMessages(ctx, &tg.MessagesForwardMessagesRequest{})
+func (ctx *Context) ForwardMediaGroup() error {
+	_, err := ctx.Raw.MessagesForwardMessages(ctx, &tg.MessagesForwardMessagesRequest{})
+	return err
 }
 
 // ExportSessionString returns session of authorized account in the form of string.
