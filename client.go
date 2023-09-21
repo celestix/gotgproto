@@ -272,15 +272,18 @@ func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error 
 	}
 }
 
-// EncodeSessionToString encodes the client session to a string in base64.
+// ExportStringSession EncodeSessionToString encodes the client session to a string in base64.
 //
 // Note: You must not share this string with anyone, it contains auth details for your logged in account.
 func (c *Client) ExportStringSession() (string, error) {
-	return functions.EncodeSessionToString(storage.GetSession())
-}
+	// InMemorySession case
+	loadSession, err := c.sessionStorage.LoadSession(c.ctx)
+	if err == nil {
+		return string(loadSession), nil
+	}
 
-func (c *Client) GetSession() ([]byte, error) {
-	return c.sessionStorage.LoadSession(c.CreateContext())
+	// todo. what if session is InMemorySession? We got panic
+	return functions.EncodeSessionToString(storage.GetSession())
 }
 
 // Idle keeps the current goroutined blocked until the client is stopped.
