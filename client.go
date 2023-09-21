@@ -11,7 +11,6 @@ import (
 	"github.com/anonyindian/gotgproto/functions"
 	"github.com/anonyindian/gotgproto/sessionMaker"
 	"github.com/anonyindian/gotgproto/storage"
-	"github.com/gotd/contrib/middleware/floodwait"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
@@ -336,14 +335,7 @@ func (c *Client) Start(opts *ClientOpts) error {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func(c *Client) {
-		waiter := floodwait.NewWaiter()
-		waiterError := waiter.Run(c.ctx, func(ctx context.Context) error {
-			// Client should be started after waiter.
-			return c.Run(ctx, c.initialize(&wg))
-		})
-		if c.err = waiterError; c.err != nil {
-			c.err = errors.Wrap(c.err, "run client")
-		}
+		c.err = c.Run(c.ctx, c.initialize(&wg))
 	}(c)
 
 	// wait till client starts
