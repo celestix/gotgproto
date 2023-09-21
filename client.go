@@ -161,7 +161,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	//		floodwait.NewSimpleWaiter().WithMaxRetries(25),
 	//		ratelimit.New(rate.Every(100*time.Millisecond), 5),
 	//	},
-	//})
+	// })
 
 	c := Client{
 		Resolver:         opts.Resolver,

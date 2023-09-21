@@ -128,12 +128,14 @@ func (dp *NativeDispatcher) dispatch(ctx context.Context, e tg.Entities, update 
 func (dp *NativeDispatcher) handleUpdate(ctx context.Context, e tg.Entities, update tg.UpdateClass) error {
 	u := ext.GetNewUpdate(ctx, dp.client, &e, update)
 	go func() {
-		if u.EffectiveMessage != nil && dp.setReply {
-			err := u.EffectiveMessage.SetRepliedToMessage(ctx, dp.client)
-			if err != nil {
-				// Swallowing the error
-				return
-			}
+		if u.EffectiveMessage == nil || !dp.setReply {
+			return
+		}
+
+		err := u.EffectiveMessage.SetRepliedToMessage(ctx, dp.client)
+		if err != nil {
+			// Swallowing the error
+			return
 		}
 	}()
 	c := ext.NewContext(ctx, dp.client, dp.self, dp.sender, &e, dp.setReply)
