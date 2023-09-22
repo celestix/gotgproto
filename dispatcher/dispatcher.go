@@ -54,11 +54,22 @@ type PanicHandler func(*ext.Context, *ext.Update, string)
 type ErrorHandler func(*ext.Context, *ext.Update, string) error
 
 // MakeDispatcher creates new custom dispatcher which process and handles incoming updates.
-func NewNativeDispatcher(setReply bool) *NativeDispatcher {
-	return &NativeDispatcher{
-		handlerMap: make(map[int][]Handler),
-		setReply:   setReply,
+func NewNativeDispatcher(setReply bool, eHandler ErrorHandler, pHandler PanicHandler) *NativeDispatcher {
+	if eHandler == nil {
+		eHandler = defaultErrorHandler
 	}
+	return &NativeDispatcher{
+		handlerMap:    make(map[int][]Handler),
+		handlerGroups: make([]int, 0),
+		setReply:      setReply,
+		Error:         eHandler,
+		Panic:         pHandler,
+	}
+}
+
+func defaultErrorHandler(_ *ext.Context, _ *ext.Update, err string) error {
+	log.Println("An error occured while handling update:", err)
+	return ContinueGroups
 }
 
 type entities tg.Entities
@@ -136,8 +147,9 @@ func (dp *NativeDispatcher) handleUpdate(ctx context.Context, e tg.Entities, upd
 			if dp.Panic != nil {
 				dp.Panic(c, u, errorStack)
 				return
+			} else {
+				log.Println(errorStack)
 			}
-			log.Println(errorStack)
 		}
 	}()
 	for _, group := range dp.handlerGroups {
