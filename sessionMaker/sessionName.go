@@ -2,6 +2,7 @@ package sessionMaker
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/anonyindian/gotgproto/functions"
@@ -83,7 +84,7 @@ func (s *SessionName) loadInMemory(sessionValue string) ([]byte, error) {
 	case StringSession:
 		return loadByStringSession(sessionValue)
 	default:
-		return loadByDefault(sessionValue)
+		return nil, errors.New("wrong session type")
 	}
 }
 
