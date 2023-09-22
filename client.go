@@ -107,6 +107,10 @@ type ClientOpts struct {
 	ClientLangCode string
 	// Custom client device
 	Device *telegram.DeviceConfig
+	// Panic handles all the panics that occur during handler execution.
+	PanicHandler dispatcher.PanicHandler
+	// Error handles all the unknown errors which are returned by the handler callback functions.
+	ErrorHandler dispatcher.ErrorHandler
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -128,7 +132,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		}
 	}
 
-	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply)
+	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply, opts.ErrorHandler, opts.PanicHandler)
 
 	// client := telegram.NewClient(appId, apiHash, telegram.Options{
 	// 	DCList:         opts.DCList,
@@ -218,7 +222,7 @@ func (c *Client) login() error {
 func (ch *Client) printCredit() {
 	if !ch.DisableCopyright {
 		fmt.Printf(`
-GoTGProto %s, Copyright (C) 2023 Anony <github.com/anonyindian>
+GoTGProto %s, Copyright (C) 2023 Anony <github.com/celestix>
 Licensed under the terms of GNU General Public License v3
 
 `, VERSION)
