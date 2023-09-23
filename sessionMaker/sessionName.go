@@ -74,6 +74,8 @@ func (s *SessionName) load() ([]byte, error) {
 }
 
 func (s *SessionName) loadInMemory(sessionValue string) ([]byte, error) {
+	// ensure that peer caching works properly
+	storage.Load("", true)
 	switch s.sessionType {
 	case PyrogramSession:
 		return loadByPyrogramSession(sessionValue)
@@ -82,7 +84,8 @@ func (s *SessionName) loadInMemory(sessionValue string) ([]byte, error) {
 	case StringSession:
 		return loadByStringSession(sessionValue)
 	default:
-		return loadByDefault(s.name, true)
+		sFD := storage.GetSession()
+		return sFD.Data, nil
 	}
 }
 
@@ -123,11 +126,11 @@ func loadByStringSession(value string) ([]byte, error) {
 	return sd.Data, err
 }
 
-func loadByDefault(value string, inMemory bool) ([]byte, error) {
+func loadByDefault(value string) ([]byte, error) {
 	if value == "" {
 		value = "new"
 	}
-	storage.Load(fmt.Sprintf("%s.session", value), inMemory)
+	storage.Load(fmt.Sprintf("%s.session", value), false)
 	sFD := storage.GetSession()
 	return sFD.Data, nil
 }
