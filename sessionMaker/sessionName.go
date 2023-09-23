@@ -69,7 +69,7 @@ func (s *SessionName) load() ([]byte, error) {
 		storage.Load("gotgproto.session", false)
 		return loadByStringSession(s.name)
 	default:
-		return loadByDefault(s.name)
+		return loadByDefault(s.name, false)
 	}
 }
 
@@ -82,7 +82,7 @@ func (s *SessionName) loadInMemory(sessionValue string) ([]byte, error) {
 	case StringSession:
 		return loadByStringSession(sessionValue)
 	default:
-		return nil, errors.New("wrong session type")
+		return loadByDefault(s.name, true)
 	}
 }
 
@@ -123,11 +123,11 @@ func loadByStringSession(value string) ([]byte, error) {
 	return sd.Data, err
 }
 
-func loadByDefault(value string) ([]byte, error) {
+func loadByDefault(value string, inMemory bool) ([]byte, error) {
 	if value == "" {
 		value = "new"
 	}
-	storage.Load(fmt.Sprintf("%s.session", value), false)
+	storage.Load(fmt.Sprintf("%s.session", value), inMemory)
 	sFD := storage.GetSession()
 	return sFD.Data, nil
 }
