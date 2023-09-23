@@ -2,7 +2,6 @@ package sessionMaker
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/anonyindian/gotgproto/functions"
