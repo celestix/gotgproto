@@ -69,7 +69,7 @@ func (s *SessionName) load() ([]byte, error) {
 		storage.Load("gotgproto.session", false)
 		return loadByStringSession(s.name)
 	default:
-		return loadByDefault(s.name, false)
+		return loadByDefault(s.name)
 	}
 }
 
