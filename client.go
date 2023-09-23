@@ -5,9 +5,6 @@ package gotgproto
 import (
 	"context"
 	"fmt"
-	"runtime"
-	"sync"
-
 	"github.com/anonyindian/gotgproto/dispatcher"
 	intErrors "github.com/anonyindian/gotgproto/errors"
 	"github.com/anonyindian/gotgproto/ext"
@@ -22,6 +19,8 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"runtime"
+	"sync"
 )
 
 const VERSION = "v1.0.0-beta10"
@@ -111,6 +110,8 @@ type ClientOpts struct {
 	PanicHandler dispatcher.PanicHandler
 	// Error handles all the unknown errors which are returned by the handler callback functions.
 	ErrorHandler dispatcher.ErrorHandler
+	// Custom middlewares
+	Middlewares []telegram.Middleware
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -122,9 +123,23 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		}
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	var sessionStorage telegram.SessionStorage
-	if opts.Session == nil || opts.Session.GetName() == sessionMaker.InMemorySession {
-		sessionStorage = &session.StorageMemory{}
+
+	isInMemory := opts.Session.GetName() == sessionMaker.InMemorySessionName
+	if opts.Session == nil || isInMemory {
+		d, _ := opts.Session.GetData()
+
+		s := session.StorageMemory{}
+		err := s.StoreSession(ctx, d)
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+
+		sessionStorage = &s
+
 		storage.Load("", true)
 	} else {
 		sessionStorage = &sessionMaker.SessionStorage{
@@ -135,20 +150,22 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply, opts.ErrorHandler, opts.PanicHandler)
 
 	// client := telegram.NewClient(appId, apiHash, telegram.Options{
-	// 	DCList:         opts.DCList,
-	// 	UpdateHandler:  d,
-	// 	SessionStorage: sessionStorage,
-	// 	Logger:         opts.Logger,
-	// 	Device: telegram.DeviceConfig{
-	// 		DeviceModel:    "GoTGProto",
-	// 		SystemVersion:  runtime.GOOS,
-	// 		AppVersion:     VERSION,
-	// 		SystemLangCode: opts.SystemLangCode,
-	// 		LangCode:       opts.ClientLangCode,
-	// 	},
+	//	DCList:         opts.DCList,
+	//	UpdateHandler: d,
+	//	SessionStorage: sessionStorage,
+	//	Logger:         opts.Logger,
+	//	Device: telegram.DeviceConfig{
+	//		DeviceModel:    "GoTGProto",
+	//		SystemVersion:  runtime.GOOS,
+	//		AppVersion:     VERSION,
+	//		SystemLangCode: opts.SystemLangCode,
+	//		LangCode:       opts.ClientLangCode,
+	//	},
+	//	Middlewares: []telegram.Middleware{
+	//		floodwait.NewSimpleWaiter().WithMaxRetries(25),
+	//		ratelimit.New(rate.Every(100*time.Millisecond), 5),
+	//	},
 	// })
-
-	ctx, cancel := context.WithCancel(context.Background())
 
 	c := Client{
 		Resolver:         opts.Resolver,
@@ -174,7 +191,10 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	return &c, c.Start(opts)
 }
 
-func (c *Client) initTelegramClient(device *telegram.DeviceConfig) {
+func (c *Client) initTelegramClient(
+	device *telegram.DeviceConfig,
+	middlewares []telegram.Middleware,
+) {
 	if device == nil {
 		device = &telegram.DeviceConfig{
 			DeviceModel:    "GoTGProto",
@@ -190,6 +210,7 @@ func (c *Client) initTelegramClient(device *telegram.DeviceConfig) {
 		SessionStorage: c.sessionStorage,
 		Logger:         c.Logger,
 		Device:         *device,
+		Middlewares:    middlewares,
 	})
 }
 
@@ -254,10 +275,17 @@ func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error 
 	}
 }
 
-// EncodeSessionToString encodes the client session to a string in base64.
+// ExportStringSession EncodeSessionToString encodes the client session to a string in base64.
 //
 // Note: You must not share this string with anyone, it contains auth details for your logged in account.
 func (c *Client) ExportStringSession() (string, error) {
+	// InMemorySession case
+	loadSession, err := c.sessionStorage.LoadSession(c.ctx)
+	if err == nil {
+		return string(loadSession), nil
+	}
+
+	// todo. what if session is InMemorySession? We got panic
 	return functions.EncodeSessionToString(storage.GetSession())
 }
 
@@ -307,12 +335,13 @@ func (c *Client) Start(opts *ClientOpts) error {
 	if c.ctx.Err() == context.Canceled {
 		c.ctx, c.cancel = context.WithCancel(context.Background())
 	}
-	c.initTelegramClient(opts.Device)
+	c.initTelegramClient(opts.Device, opts.Middlewares)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func(c *Client) {
 		c.err = c.Run(c.ctx, c.initialize(&wg))
 	}(c)
+
 	// wait till client starts
 	wg.Wait()
 	return c.err
