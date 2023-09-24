@@ -5,6 +5,9 @@ package gotgproto
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"sync"
+
 	"github.com/celestix/gotgproto/dispatcher"
 	intErrors "github.com/celestix/gotgproto/errors"
 	"github.com/celestix/gotgproto/ext"
@@ -19,8 +22,6 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"runtime"
-	"sync"
 )
 
 const VERSION = "v1.0.0-beta10"
@@ -137,10 +138,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 			cancel()
 			return nil, err
 		}
-
 		sessionStorage = &s
-
-		storage.Load("", true)
 	} else {
 		sessionStorage = &sessionMaker.SessionStorage{
 			Session: opts.Session,

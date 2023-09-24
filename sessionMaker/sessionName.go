@@ -47,12 +47,12 @@ func NewSession(sessionName string, sessionType SessionType) *SessionName {
 }
 
 // NewInMemorySession Used for create Session with in memory type
-func NewInMemorySession(sessionValue string, sessionType SessionType) *SessionName {
+func NewInMemorySession(sessionName string, sessionType SessionType) *SessionName {
 	s := SessionName{
 		name:        InMemorySessionName,
 		sessionType: sessionType,
 	}
-	s.data, s.err = s.loadInMemory(sessionValue)
+	s.data, s.err = s.loadInMemory(sessionName)
 	return &s
 }
 
