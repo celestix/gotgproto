@@ -96,6 +96,6 @@ func buttonCallback(ctx *ext.Context, update *ext.Update) error {
 
 func echo(ctx *ext.Context, update *ext.Update) error {
 	msg := update.EffectiveMessage
-	_, err := ctx.Reply(update, msg.Message, nil)
+	_, err := ctx.Reply(update, msg.Text, nil)
 	return err
 }
