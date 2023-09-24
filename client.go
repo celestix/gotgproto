@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const VERSION = "v1.0.0-beta10"
+const VERSION = "v1.0.0-beta13"
 
 type Client struct {
 	// Dispatcher handlers the incoming updates and execute mapped handlers. It is recommended to use dispatcher.MakeDispatcher function for this field.
