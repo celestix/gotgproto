@@ -138,11 +138,7 @@ func (dp *NativeDispatcher) dispatch(ctx context.Context, e tg.Entities, update 
 
 func (dp *NativeDispatcher) handleUpdate(ctx context.Context, e tg.Entities, update tg.UpdateClass) error {
 	u := ext.GetNewUpdate(ctx, dp.client, &e, update)
-	go func() {
-		if u.EffectiveMessage != nil && dp.setReply {
-			_ = u.EffectiveMessage.SetRepliedToMessage(ctx, dp.client)
-		}
-	}()
+	go dp.handleUpdateRepliedToMessage(u, ctx)
 	c := ext.NewContext(ctx, dp.client, dp.self, dp.sender, &e, dp.setReply)
 	var err error
 	defer func() {
@@ -182,6 +178,14 @@ func (dp *NativeDispatcher) handleUpdate(ctx context.Context, e tg.Entities, upd
 		}
 	}
 	return err
+}
+
+func (dp *NativeDispatcher) handleUpdateRepliedToMessage(u *ext.Update, ctx context.Context) {
+	if u.EffectiveMessage == nil || !dp.setReply {
+		return
+	}
+
+	_ = u.EffectiveMessage.SetRepliedToMessage(ctx, dp.client)
 }
 
 func saveUsersPeers(u tg.UserClassArray) {
