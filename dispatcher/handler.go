@@ -3,7 +3,7 @@ package dispatcher
 import (
 	"sort"
 
-	"github.com/anonyindian/gotgproto/ext"
+	"github.com/celestix/gotgproto/ext"
 )
 
 // Handler is the common interface for all the handlers.

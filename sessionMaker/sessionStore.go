@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/anonyindian/gotgproto/storage"
+	"github.com/celestix/gotgproto/storage"
 	"github.com/go-faster/errors"
 	"github.com/gotd/td/session"
 )

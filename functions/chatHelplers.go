@@ -3,7 +3,7 @@ package functions
 import (
 	"context"
 
-	"github.com/anonyindian/gotgproto/storage"
+	"github.com/celestix/gotgproto/storage"
 	"github.com/gotd/td/tg"
 )
 

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anonyindian/gotgproto/storage"
-	"github.com/anonyindian/gotgproto/types"
+	"github.com/celestix/gotgproto/storage"
+	"github.com/celestix/gotgproto/types"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
 )

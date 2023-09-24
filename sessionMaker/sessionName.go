@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/anonyindian/gotgproto/functions"
-	"github.com/anonyindian/gotgproto/storage"
+	"github.com/celestix/gotgproto/functions"
+	"github.com/celestix/gotgproto/storage"
 	"github.com/gotd/td/session"
 )
 

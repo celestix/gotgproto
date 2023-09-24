@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"github.com/anonyindian/gotgproto/dispatcher/handlers/filters"
-	"github.com/anonyindian/gotgproto/ext"
+	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
+	"github.com/celestix/gotgproto/ext"
 )
 
 // ChatMemberUpdated handler is executed on all type of incoming updates.

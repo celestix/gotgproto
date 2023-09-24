@@ -3,8 +3,8 @@ package handlers
 import (
 	"strings"
 
-	"github.com/anonyindian/gotgproto/dispatcher/handlers/filters"
-	"github.com/anonyindian/gotgproto/ext"
+	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
+	"github.com/celestix/gotgproto/ext"
 )
 
 // Command handler is executed when the update consists of tg.Message provided it is a command and satisfies all the conditions.

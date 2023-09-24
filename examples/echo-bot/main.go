@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/anonyindian/gotgproto"
-	"github.com/anonyindian/gotgproto/dispatcher"
-	"github.com/anonyindian/gotgproto/dispatcher/handlers"
-	"github.com/anonyindian/gotgproto/dispatcher/handlers/filters"
-	"github.com/anonyindian/gotgproto/ext"
-	"github.com/anonyindian/gotgproto/sessionMaker"
+	"github.com/celestix/gotgproto"
+	"github.com/celestix/gotgproto/dispatcher"
+	"github.com/celestix/gotgproto/dispatcher/handlers"
+	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
+	"github.com/celestix/gotgproto/ext"
+	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/gotd/td/tg"
 )
 
@@ -65,7 +65,7 @@ func start(ctx *ext.Context, update *ext.Update) error {
 						},
 						&tg.KeyboardButtonURL{
 							Text: "gotgproto",
-							URL:  "https://github.com/anonyindian/gotgproto",
+							URL:  "https://github.com/celestix/gotgproto",
 						},
 					},
 				},

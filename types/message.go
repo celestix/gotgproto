@@ -3,8 +3,8 @@ package types
 import (
 	"context"
 
-	"github.com/anonyindian/gotgproto/errors"
-	"github.com/anonyindian/gotgproto/functions"
+	"github.com/celestix/gotgproto/errors"
+	"github.com/celestix/gotgproto/functions"
 	"github.com/gotd/td/tg"
 )
 
@@ -66,7 +66,11 @@ func constructMessageFromMessageService(m *tg.MessageService) *Message {
 }
 
 func (m *Message) SetRepliedToMessage(ctx context.Context, raw *tg.Client) error {
-	replyTo := m.ReplyTo.ReplyToMsgID
+	replyMessage, ok := m.ReplyTo.(*tg.MessageReplyHeader)
+	if !ok {
+		return errors.ErrReplyNotMessage
+	}
+	replyTo := replyMessage.ReplyToMsgID
 	if replyTo == 0 {
 		return errors.ErrMessageNotExist
 	}

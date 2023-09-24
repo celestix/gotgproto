@@ -14,4 +14,5 @@ var (
 	ErrTextEmpty       = errors.New("text was not provided")
 	ErrTextInvalid     = errors.New("type of text is invalid, provide one from string and []styling.StyledTextOption")
 	ErrMessageNotExist = errors.New("message not exist")
+	ErrReplyNotMessage = errors.New("reply header is not a message")
 )

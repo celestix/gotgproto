@@ -7,8 +7,8 @@ import (
 	"log"
 	"runtime/debug"
 
-	"github.com/anonyindian/gotgproto/ext"
-	"github.com/anonyindian/gotgproto/storage"
+	"github.com/celestix/gotgproto/ext"
+	"github.com/celestix/gotgproto/storage"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
@@ -140,7 +140,7 @@ func (dp *NativeDispatcher) handleUpdate(ctx context.Context, e tg.Entities, upd
 	u := ext.GetNewUpdate(ctx, dp.client, &e, update)
 	go func() {
 		if u.EffectiveMessage != nil && dp.setReply {
-			u.EffectiveMessage.SetRepliedToMessage(ctx, dp.client)
+			_ = u.EffectiveMessage.SetRepliedToMessage(ctx, dp.client)
 		}
 	}()
 	c := ext.NewContext(ctx, dp.client, dp.self, dp.sender, &e, dp.setReply)

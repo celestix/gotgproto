@@ -1,7 +1,7 @@
 package filters
 
 import (
-	"github.com/anonyindian/gotgproto/functions"
+	"github.com/celestix/gotgproto/functions"
 	"github.com/gotd/td/tg"
 )
 
