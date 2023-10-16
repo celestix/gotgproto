@@ -209,6 +209,7 @@ func (c *Client) initTelegramClient(
 		Logger:         c.Logger,
 		Device:         *device,
 		Middlewares:    middlewares,
+		Resolver:       c.Resolver,
 	})
 }
 
