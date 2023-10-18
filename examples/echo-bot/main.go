@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/celestix/gotgproto"
-	"github.com/celestix/gotgproto/dispatcher"
-	"github.com/celestix/gotgproto/dispatcher/handlers"
-	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
-	"github.com/celestix/gotgproto/ext"
-	"github.com/celestix/gotgproto/sessionMaker"
+	"github.com/KoNekoD/gotgproto"
+	"github.com/KoNekoD/gotgproto/dispatcher"
+	"github.com/KoNekoD/gotgproto/dispatcher/handlers"
+	"github.com/KoNekoD/gotgproto/dispatcher/handlers/filters"
+	"github.com/KoNekoD/gotgproto/ext"
+	"github.com/KoNekoD/gotgproto/sessionMaker"
 	"github.com/gotd/td/tg"
 )
 

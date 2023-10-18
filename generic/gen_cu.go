@@ -4,9 +4,9 @@
 package generic
 
 import (
-	"github.com/celestix/gotgproto/ext"
-	"github.com/celestix/gotgproto/storage"
-	"github.com/celestix/gotgproto/types"
+	"github.com/KoNekoD/gotgproto/ext"
+	"github.com/KoNekoD/gotgproto/storage"
+	"github.com/KoNekoD/gotgproto/types"
 	"github.com/gotd/td/tg"
 )
 

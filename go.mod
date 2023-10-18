@@ -1,4 +1,4 @@
-module github.com/celestix/gotgproto
+module github.com/KoNekoD/gotgproto
 
 go 1.20
 

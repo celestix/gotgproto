@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/celestix/gotgproto/storage"
+	"github.com/KoNekoD/gotgproto/storage"
 )
 
 // EncodeSessionToString encodes the provided session to a string in base64 using json bytes.

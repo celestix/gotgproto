@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/celestix/gotgproto/generator/parser"
+	"github.com/KoNekoD/gotgproto/generator/parser"
 )
 
 var helperFuncsCUTempl = template.Must(template.New("cuHelpers").Parse(helperFuncsCU))
