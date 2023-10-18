@@ -5,9 +5,6 @@ package gotgproto
 import (
 	"context"
 	"fmt"
-	"runtime"
-	"sync"
-
 	"github.com/KoNekoD/gotgproto/dispatcher"
 	intErrors "github.com/KoNekoD/gotgproto/errors"
 	"github.com/KoNekoD/gotgproto/ext"
@@ -22,6 +19,7 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"runtime"
 )
 
 const VERSION = "v1.0.0-beta13"
@@ -255,7 +253,7 @@ Licensed under the terms of GNU General Public License v3
 	}
 }
 
-func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error {
+func (c *Client) initialize() func(ctx context.Context) error {
 	return func(ctx context.Context) error {
 		err := c.login()
 		if err != nil {
@@ -273,7 +271,6 @@ func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error 
 		storage.AddPeer(self.ID, self.AccessHash, storage.TypeUser, self.Username)
 
 		// notify channel that client is up
-		wg.Done()
 		c.running = true
 		<-c.ctx.Done()
 		return c.ctx.Err()
@@ -343,16 +340,15 @@ func (c *Client) Start(opts *ClientOpts) error {
 	if c.ctx.Err() == context.Canceled {
 		c.ctx, c.cancel = context.WithCancel(context.Background())
 	}
+
 	c.initTelegramClient(opts.Device, opts.Middlewares)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 	go func(c *Client) {
-		c.err = c.Run(c.ctx, c.initialize(&wg))
+		c.err = c.Run(c.ctx, c.initialize())
 		fmt.Println("e")
 	}(c)
 
 	// wait till client starts
-	wg.Wait()
+	<-c.ctx.Done()
 	return c.err
 }
 
