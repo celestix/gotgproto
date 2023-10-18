@@ -344,11 +344,15 @@ func (c *Client) Start(opts *ClientOpts) error {
 	c.initTelegramClient(opts.Device, opts.Middlewares)
 	go func(c *Client) {
 		c.err = c.Run(c.ctx, c.initialize())
-		fmt.Println("e")
 	}(c)
 
 	// wait till client starts
 	<-c.ctx.Done()
+	if c.ctx.Err() == context.Canceled {
+		return context.Canceled
+	}
+
+	c.ctx, c.cancel = context.WithCancel(context.Background())
 	return c.err
 }
 
