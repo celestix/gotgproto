@@ -348,8 +348,8 @@ func (c *Client) Start(opts *ClientOpts) error {
 
 	// wait till client starts
 	<-c.ctx.Done()
-	if c.ctx.Err() == context.Canceled {
-		return context.Canceled
+	if c.ctx.Err() == context.DeadlineExceeded {
+		return context.DeadlineExceeded
 	}
 
 	c.ctx, c.cancel = context.WithCancel(context.Background())
