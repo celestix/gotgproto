@@ -114,7 +114,8 @@ type ClientOpts struct {
 	// Custom middlewares
 	Middlewares []telegram.Middleware
 	// Custom context(if you need to stop the client from running externally)
-	Ctx func() (ctx context.Context, cancel context.CancelFunc)
+	Ctx       context.Context
+	CtxCancel context.CancelFunc
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -127,8 +128,8 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	if opts.Ctx != nil {
-		ctx, cancel = opts.Ctx()
+	if opts.Ctx != nil && opts.CtxCancel != nil {
+		ctx, cancel = opts.Ctx, opts.CtxCancel
 	}
 
 	var sessionStorage telegram.SessionStorage
