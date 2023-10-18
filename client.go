@@ -348,6 +348,7 @@ func (c *Client) Start(opts *ClientOpts) error {
 	wg.Add(1)
 	go func(c *Client) {
 		c.err = c.Run(c.ctx, c.initialize(&wg))
+		fmt.Println("e")
 	}(c)
 
 	// wait till client starts
