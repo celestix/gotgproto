@@ -143,3 +143,7 @@ func (s *SessionName) GetName() string {
 func (s *SessionName) GetData() ([]byte, error) {
 	return s.data, s.err
 }
+
+func (s *SessionName) ReplaceData(data []byte) {
+	s.data = data
+}
