@@ -57,5 +57,9 @@ func StylizeText(s string) []styling.StyledTextOption {
 			triggered = true
 		}
 	}
+	
+	if tString != "" { // without this check, the last style is not added
+		a = append(a, stylingMap[trigger](tString)) 
+	}
 	return a
 }
