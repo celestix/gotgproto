@@ -101,6 +101,10 @@ type ClientOpts struct {
 	//
 	// Set to `false` by default.
 	AutoFetchReply bool
+	// Setting this field to true will lead to automatically fetch the entire reply_to_message chain for a new message update.
+	//
+	// Set to `false` by default.
+	FetchEntireReplyChain bool
 	// Code for the language used on the device's OS, ISO 639-1 standard.
 	SystemLangCode string
 	// Code for the language used on the client, ISO 639-1 standard.
@@ -145,7 +149,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		}
 	}
 
-	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply, opts.ErrorHandler, opts.PanicHandler)
+	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply, opts.FetchEntireReplyChain, opts.ErrorHandler, opts.PanicHandler)
 
 	// client := telegram.NewClient(appId, apiHash, telegram.Options{
 	//	DCList:         opts.DCList,
@@ -209,7 +213,6 @@ func (c *Client) initTelegramClient(
 		Logger:         c.Logger,
 		Device:         *device,
 		Middlewares:    middlewares,
-		Resolver:       c.Resolver,
 	})
 }
 
@@ -279,15 +282,12 @@ func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error 
 // Note: You must not share this string with anyone, it contains auth details for your logged in account.
 func (c *Client) ExportStringSession() (string, error) {
 	// InMemorySession case
-	loadedSessionData, err := c.sessionStorage.LoadSession(c.ctx)
+	loadSession, err := c.sessionStorage.LoadSession(c.ctx)
 	if err == nil {
-		loadedSession := &storage.Session{
-			Version: storage.LatestVersion,
-			Data:    loadedSessionData,
-		}
-		return functions.EncodeSessionToString(loadedSession)
+		return string(loadSession), nil
 	}
 
+	// todo. what if session is InMemorySession? We got panic
 	return functions.EncodeSessionToString(storage.GetSession())
 }
 
