@@ -35,11 +35,12 @@ type Dispatcher interface {
 }
 
 type NativeDispatcher struct {
-	cancel   context.CancelFunc
-	client   *tg.Client
-	self     *tg.User
-	sender   *message.Sender
-	setReply bool
+	cancel              context.CancelFunc
+	client              *tg.Client
+	self                *tg.User
+	sender              *message.Sender
+	setReply            bool
+	setEntireReplyChain bool
 	// Panic handles all the panics that occur during handler execution.
 	Panic PanicHandler
 	// Error handles all the unknown errors which are returned by the handler callback functions.
@@ -54,16 +55,17 @@ type PanicHandler func(*ext.Context, *ext.Update, string)
 type ErrorHandler func(*ext.Context, *ext.Update, string) error
 
 // MakeDispatcher creates new custom dispatcher which process and handles incoming updates.
-func NewNativeDispatcher(setReply bool, eHandler ErrorHandler, pHandler PanicHandler) *NativeDispatcher {
+func NewNativeDispatcher(setReply bool, setEntireReplyChain bool, eHandler ErrorHandler, pHandler PanicHandler) *NativeDispatcher {
 	if eHandler == nil {
 		eHandler = defaultErrorHandler
 	}
 	return &NativeDispatcher{
-		handlerMap:    make(map[int][]Handler),
-		handlerGroups: make([]int, 0),
-		setReply:      setReply,
-		Error:         eHandler,
-		Panic:         pHandler,
+		handlerMap:          make(map[int][]Handler),
+		handlerGroups:       make([]int, 0),
+		setReply:            setReply,
+		setEntireReplyChain: setEntireReplyChain,
+		Error:               eHandler,
+		Panic:               pHandler,
 	}
 }
 
@@ -138,7 +140,7 @@ func (dp *NativeDispatcher) dispatch(ctx context.Context, e tg.Entities, update 
 
 func (dp *NativeDispatcher) handleUpdate(ctx context.Context, e tg.Entities, update tg.UpdateClass) error {
 	u := ext.GetNewUpdate(ctx, dp.client, &e, update)
-	go dp.handleUpdateRepliedToMessage(u, ctx)
+	dp.handleUpdateRepliedToMessage(u, ctx)
 	c := ext.NewContext(ctx, dp.client, dp.self, dp.sender, &e, dp.setReply)
 	var err error
 	defer func() {
@@ -181,11 +183,21 @@ func (dp *NativeDispatcher) handleUpdate(ctx context.Context, e tg.Entities, upd
 }
 
 func (dp *NativeDispatcher) handleUpdateRepliedToMessage(u *ext.Update, ctx context.Context) {
-	if u.EffectiveMessage == nil || !dp.setReply {
+	msg := u.EffectiveMessage
+	if msg == nil || !dp.setReply {
 		return
 	}
+	for {
+		if msg.Message.ReplyTo == nil {
+			return
+		}
 
-	_ = u.EffectiveMessage.SetRepliedToMessage(ctx, dp.client)
+		_ = msg.SetRepliedToMessage(ctx, dp.client)
+		if !dp.setEntireReplyChain {
+			return
+		}
+		msg = msg.ReplyToMessage
+	}
 }
 
 func saveUsersPeers(u tg.UserClassArray) {
