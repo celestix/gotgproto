@@ -5,6 +5,7 @@ import (
 
 	"github.com/celestix/gotgproto/errors"
 	"github.com/celestix/gotgproto/functions"
+	"github.com/celestix/gotgproto/storage"
 	"github.com/gotd/td/tg"
 )
 
@@ -65,7 +66,7 @@ func constructMessageFromMessageService(m *tg.MessageService) *Message {
 	}
 }
 
-func (m *Message) SetRepliedToMessage(ctx context.Context, raw *tg.Client) error {
+func (m *Message) SetRepliedToMessage(ctx context.Context, raw *tg.Client, p *storage.PeerStorage) error {
 	replyMessage, ok := m.ReplyTo.(*tg.MessageReplyHeader)
 	if !ok {
 		return errors.ErrReplyNotMessage
@@ -75,7 +76,7 @@ func (m *Message) SetRepliedToMessage(ctx context.Context, raw *tg.Client) error
 		return errors.ErrMessageNotExist
 	}
 	chatId := functions.GetChatIdFromPeer(m.PeerID)
-	msgs, err := functions.GetMessages(ctx, raw, chatId, []tg.InputMessageClass{
+	msgs, err := functions.GetMessages(ctx, raw, p, chatId, []tg.InputMessageClass{
 		&tg.InputMessageID{
 			ID: replyTo,
 		},

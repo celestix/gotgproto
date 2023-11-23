@@ -57,6 +57,8 @@ type Client struct {
 	// Code for the language used on the client, ISO 639-1 standard.
 	ClientLangCode string
 
+	PeerStorage *storage.PeerStorage
+
 	clientType     ClientType
 	ctx            context.Context
 	err            error
@@ -133,9 +135,9 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	var sessionStorage telegram.SessionStorage
 
 	isInMemory := opts.Session.GetName() == sessionMaker.InMemorySessionName
-	if opts.Session == nil || isInMemory {
-		d, _ := opts.Session.GetData()
 
+	if isInMemory {
+		d, _ := opts.Session.GetData()
 		s := session.StorageMemory{}
 		err := s.StoreSession(ctx, d)
 		if err != nil {
@@ -149,7 +151,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		}
 	}
 
-	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply, opts.FetchEntireReplyChain, opts.ErrorHandler, opts.PanicHandler)
+	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply, opts.FetchEntireReplyChain, opts.ErrorHandler, opts.PanicHandler, opts.Session.PeerStorage)
 
 	// client := telegram.NewClient(appId, apiHash, telegram.Options{
 	//	DCList:         opts.DCList,
@@ -179,6 +181,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		SystemLangCode:   opts.SystemLangCode,
 		ClientLangCode:   opts.ClientLangCode,
 		Dispatcher:       d,
+		PeerStorage:      opts.Session.PeerStorage,
 		sessionStorage:   sessionStorage,
 		clientType:       cType,
 		ctx:              ctx,
@@ -267,7 +270,7 @@ func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error 
 
 		c.Dispatcher.Initialize(ctx, c.Stop, c.Client, self)
 
-		storage.AddPeer(self.ID, self.AccessHash, storage.TypeUser, self.Username)
+		c.PeerStorage.AddPeer(self.ID, self.AccessHash, storage.TypeUser, self.Username)
 
 		// notify channel that client is up
 		wg.Done()
@@ -288,7 +291,7 @@ func (c *Client) ExportStringSession() (string, error) {
 	}
 
 	// todo. what if session is InMemorySession? We got panic
-	return functions.EncodeSessionToString(storage.GetSession())
+	return functions.EncodeSessionToString(c.PeerStorage.GetSession())
 }
 
 // Idle keeps the current goroutined blocked until the client is stopped.
@@ -303,6 +306,7 @@ func (c *Client) CreateContext() *ext.Context {
 	return ext.NewContext(
 		c.ctx,
 		c.API(),
+		c.PeerStorage,
 		c.Self,
 		message.NewSender(c.API()),
 		&tg.Entities{

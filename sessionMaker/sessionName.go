@@ -15,6 +15,7 @@ type SessionName struct {
 	sessionType SessionType
 	data        []byte
 	err         error
+	PeerStorage *storage.PeerStorage
 }
 
 // SessionType is the type of session you want to log in through.
@@ -59,22 +60,22 @@ func NewInMemorySession(sessionName string, sessionType SessionType) *SessionNam
 func (s *SessionName) load() ([]byte, error) {
 	switch s.sessionType {
 	case PyrogramSession:
-		storage.Load("pyrogram.session", false)
+		s.PeerStorage = storage.NewPeerStorage("pyrogram.session", false)
 		return loadByPyrogramSession(s.name)
 	case TelethonSession:
-		storage.Load("telethon.session", false)
+		s.PeerStorage = storage.NewPeerStorage("telethon.session", false)
 		return loadByTelethonSession(s.name)
 	case StringSession:
-		storage.Load("gotgproto.session", false)
+		s.PeerStorage = storage.NewPeerStorage("gotgproto.session", false)
 		return loadByStringSession(s.name)
 	default:
-		return loadByDefault(s.name)
+		return loadByDefault(s.PeerStorage, s.name)
 	}
 }
 
 func (s *SessionName) loadInMemory(sessionValue string) ([]byte, error) {
 	// ensure that peer caching works properly
-	storage.Load("", true)
+	s.PeerStorage = storage.NewPeerStorage("", true)
 	switch s.sessionType {
 	case PyrogramSession:
 		return loadByPyrogramSession(sessionValue)
@@ -82,10 +83,10 @@ func (s *SessionName) loadInMemory(sessionValue string) ([]byte, error) {
 		return loadByTelethonSession(sessionValue)
 	case StringSession:
 		return loadByStringSession(sessionValue)
-	default:
-		sFD := storage.GetSession()
-		return sFD.Data, nil
+	case Session:
+		panic("can not use sqlite storage with memory storage constructor")
 	}
+	return nil, nil
 }
 
 func loadByPyrogramSession(value string) ([]byte, error) {
@@ -125,12 +126,12 @@ func loadByStringSession(value string) ([]byte, error) {
 	return sd.Data, err
 }
 
-func loadByDefault(value string) ([]byte, error) {
+func loadByDefault(p *storage.PeerStorage, value string) ([]byte, error) {
 	if value == "" {
 		value = "new"
 	}
-	storage.Load(fmt.Sprintf("%s.session", value), false)
-	sFD := storage.GetSession()
+	*p = *storage.NewPeerStorage(fmt.Sprintf("%s.session", value), false)
+	sFD := p.GetSession()
 	return sFD.Data, nil
 }
 

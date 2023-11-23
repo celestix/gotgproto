@@ -31,20 +31,22 @@ type Context struct {
 	// original context of the client.
 	context.Context
 
-	setReply bool
-	random   *rand.Rand
+	setReply    bool
+	random      *rand.Rand
+	PeerStorage *storage.PeerStorage
 }
 
 // NewContext creates a new Context object with provided parameters.
-func NewContext(ctx context.Context, client *tg.Client, self *tg.User, sender *message.Sender, entities *tg.Entities, setReply bool) *Context {
+func NewContext(ctx context.Context, client *tg.Client, peerStorage *storage.PeerStorage, self *tg.User, sender *message.Sender, entities *tg.Entities, setReply bool) *Context {
 	return &Context{
-		Context:  ctx,
-		Raw:      client,
-		Self:     self,
-		Sender:   sender,
-		Entities: entities,
-		random:   rand.New(rand.NewSource(time.Now().Unix())),
-		setReply: setReply,
+		Context:     ctx,
+		Raw:         client,
+		Self:        self,
+		Sender:      sender,
+		Entities:    entities,
+		random:      rand.New(rand.NewSource(time.Now().Unix())),
+		setReply:    setReply,
+		PeerStorage: peerStorage,
 	}
 }
 
@@ -85,7 +87,7 @@ func (ctx *Context) Reply(upd *Update, text interface{}, opts *ReplyOpts) (*type
 	case string:
 		m.Message = text
 		u, err := builder.Text(ctx, text)
-		m, err = functions.ReturnNewMessageWithError(m, u, err)
+		m, err = functions.ReturnNewMessageWithError(m, u, ctx.PeerStorage, err)
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +98,7 @@ func (ctx *Context) Reply(upd *Update, text interface{}, opts *ReplyOpts) (*type
 		}
 		m.Message, _ = tb.Complete()
 		u, err := builder.StyledText(ctx, text...)
-		m, err = functions.ReturnNewMessageWithError(m, u, err)
+		m, err = functions.ReturnNewMessageWithError(m, u, ctx.PeerStorage, err)
 		if err != nil {
 			return nil, err
 		}
@@ -115,18 +117,18 @@ func (ctx *Context) SendMessage(chatId int64, request *tg.MessagesSendMessageReq
 	}
 	request.RandomID = ctx.generateRandomID()
 	if request.Peer == nil {
-		request.Peer = functions.GetInputPeerClassFromId(chatId)
+		request.Peer = functions.GetInputPeerClassFromId(ctx.PeerStorage, chatId)
 	}
 	var m = &tg.Message{}
 	m.Message = request.Message
 	u, err := ctx.Raw.MessagesSendMessage(ctx, request)
-	message, err := functions.ReturnNewMessageWithError(m, u, err)
+	message, err := functions.ReturnNewMessageWithError(m, u, ctx.PeerStorage, err)
 	if err != nil {
 		return nil, err
 	}
 	msg := types.ConstructMessage(message)
 	if ctx.setReply {
-		_ = msg.SetRepliedToMessage(ctx.Context, ctx.Raw)
+		_ = msg.SetRepliedToMessage(ctx.Context, ctx.Raw, ctx.PeerStorage)
 	}
 	return msg, nil
 }
@@ -138,18 +140,18 @@ func (ctx *Context) SendMedia(chatId int64, request *tg.MessagesSendMediaRequest
 	}
 	request.RandomID = ctx.generateRandomID()
 	if request.Peer == nil {
-		request.Peer = functions.GetInputPeerClassFromId(chatId)
+		request.Peer = functions.GetInputPeerClassFromId(ctx.PeerStorage, chatId)
 	}
 	var m = &tg.Message{}
 	m.Message = request.Message
 	u, err := ctx.Raw.MessagesSendMedia(ctx, request)
-	message, err := functions.ReturnNewMessageWithError(m, u, err)
+	message, err := functions.ReturnNewMessageWithError(m, u, ctx.PeerStorage, err)
 	if err != nil {
 		return nil, err
 	}
 	msg := types.ConstructMessage(message)
 	if ctx.setReply {
-		_ = msg.SetRepliedToMessage(ctx.Context, ctx.Raw)
+		_ = msg.SetRepliedToMessage(ctx.Context, ctx.Raw, ctx.PeerStorage)
 	}
 	return msg, nil
 }
@@ -161,7 +163,7 @@ func (ctx *Context) SetInlineBotResult(request *tg.MessagesSetInlineBotResultsRe
 }
 
 func (ctx *Context) GetInlineBotResults(chatId int64, botUsername string, request *tg.MessagesGetInlineBotResultsRequest) (*tg.MessagesBotResults, error) {
-	bot := storage.GetPeerByUsername(botUsername)
+	bot := ctx.PeerStorage.GetPeerByUsername(botUsername)
 	if bot.ID == 0 {
 		c, err := ctx.ResolveUsername(botUsername)
 		if err != nil {
@@ -177,7 +179,7 @@ func (ctx *Context) GetInlineBotResults(chatId int64, botUsername string, reques
 			return nil, errors.New("provided username was invalid for a bot")
 		}
 	}
-	request.Peer = storage.GetInputPeerById(chatId)
+	request.Peer = ctx.PeerStorage.GetInputPeerById(chatId)
 	request.Bot = &tg.InputUser{
 		UserID:     bot.ID,
 		AccessHash: bot.AccessHash,
@@ -194,7 +196,7 @@ func (ctx *Context) SendInlineBotResult(chatId int64, request *tg.MessagesSendIn
 	}
 	request.RandomID = ctx.generateRandomID()
 	if request.Peer == nil {
-		request.Peer = functions.GetInputPeerClassFromId(chatId)
+		request.Peer = functions.GetInputPeerClassFromId(ctx.PeerStorage, chatId)
 	}
 	return ctx.Raw.MessagesSendInlineBotResult(ctx, request)
 }
@@ -205,18 +207,18 @@ func (ctx *Context) SendReaction(chatId int64, request *tg.MessagesSendReactionR
 		request = &tg.MessagesSendReactionRequest{}
 	}
 	if request.Peer == nil {
-		request.Peer = functions.GetInputPeerClassFromId(chatId)
+		request.Peer = functions.GetInputPeerClassFromId(ctx.PeerStorage, chatId)
 	}
 	var m = &tg.Message{}
 	// m.Message = request.Reaction
 	u, err := ctx.Raw.MessagesSendReaction(ctx, request)
-	message, err := functions.ReturnNewMessageWithError(m, u, err)
+	message, err := functions.ReturnNewMessageWithError(m, u, ctx.PeerStorage, err)
 	if err != nil {
 		return nil, err
 	}
 	msg := types.ConstructMessage(message)
 	if ctx.setReply {
-		_ = msg.SetRepliedToMessage(ctx.Context, ctx.Raw)
+		_ = msg.SetRepliedToMessage(ctx.Context, ctx.Raw, ctx.PeerStorage)
 	}
 	return msg, nil
 }
@@ -227,16 +229,16 @@ func (ctx *Context) SendMultiMedia(chatId int64, request *tg.MessagesSendMultiMe
 		request = &tg.MessagesSendMultiMediaRequest{}
 	}
 	if request.Peer == nil {
-		request.Peer = functions.GetInputPeerClassFromId(chatId)
+		request.Peer = functions.GetInputPeerClassFromId(ctx.PeerStorage, chatId)
 	}
 	u, err := ctx.Raw.MessagesSendMultiMedia(ctx, request)
-	message, err := functions.ReturnNewMessageWithError(&tg.Message{}, u, err)
+	message, err := functions.ReturnNewMessageWithError(&tg.Message{}, u, ctx.PeerStorage, err)
 	if err != nil {
 		return nil, err
 	}
 	msg := types.ConstructMessage(message)
 	if ctx.setReply {
-		_ = msg.SetRepliedToMessage(ctx.Context, ctx.Raw)
+		_ = msg.SetRepliedToMessage(ctx.Context, ctx.Raw, ctx.PeerStorage)
 	}
 	return msg, nil
 }
@@ -255,22 +257,23 @@ func (ctx *Context) EditMessage(chatId int64, request *tg.MessagesEditMessageReq
 		request = &tg.MessagesEditMessageRequest{}
 	}
 	if request.Peer == nil {
-		request.Peer = functions.GetInputPeerClassFromId(chatId)
+		request.Peer = functions.GetInputPeerClassFromId(ctx.PeerStorage, chatId)
 	}
-	message, err := functions.ReturnEditMessageWithError(ctx.Raw.MessagesEditMessage(ctx, request))
+	upds, err := ctx.Raw.MessagesEditMessage(ctx, request)
+	message, err := functions.ReturnEditMessageWithError(ctx.PeerStorage, upds, err)
 	if err != nil {
 		return nil, err
 	}
 	msg := types.ConstructMessage(message)
 	if ctx.setReply {
-		_ = msg.SetRepliedToMessage(ctx.Context, ctx.Raw)
+		_ = msg.SetRepliedToMessage(ctx.Context, ctx.Raw, ctx.PeerStorage)
 	}
 	return msg, nil
 }
 
 // GetChat returns tg.ChatFullClass of the provided chat id.
 func (ctx *Context) GetChat(chatId int64) (tg.ChatFullClass, error) {
-	peer := storage.GetPeerById(chatId)
+	peer := ctx.PeerStorage.GetPeerById(chatId)
 	if peer.ID == 0 {
 		return nil, mtp_errors.ErrPeerNotFound
 	}
@@ -296,7 +299,7 @@ func (ctx *Context) GetChat(chatId int64) (tg.ChatFullClass, error) {
 
 // GetUser returns tg.UserFull of the provided user id.
 func (ctx *Context) GetUser(userId int64) (*tg.UserFull, error) {
-	peer := storage.GetPeerById(userId)
+	peer := ctx.PeerStorage.GetPeerById(userId)
 	if peer.ID == 0 {
 		return nil, mtp_errors.ErrPeerNotFound
 	}
@@ -316,12 +319,12 @@ func (ctx *Context) GetUser(userId int64) (*tg.UserFull, error) {
 
 // GetMessages is used to fetch messages from a PM (Private Chat).
 func (ctx *Context) GetMessages(chatId int64, messageIds []tg.InputMessageClass) ([]tg.MessageClass, error) {
-	return functions.GetMessages(ctx.Context, ctx.Raw, chatId, messageIds)
+	return functions.GetMessages(ctx.Context, ctx.Raw, ctx.PeerStorage, chatId, messageIds)
 }
 
 // BanChatMember is used to ban a user from a chat.
 func (ctx *Context) BanChatMember(chatId, userId int64, untilDate int) (tg.UpdatesClass, error) {
-	peerChatStorage := storage.GetPeerById(chatId)
+	peerChatStorage := ctx.PeerStorage.GetPeerById(chatId)
 	if peerChatStorage.ID == 0 {
 		return nil, mtp_errors.ErrPeerNotFound
 	}
@@ -337,7 +340,7 @@ func (ctx *Context) BanChatMember(chatId, userId int64, untilDate int) (tg.Updat
 			ChatID: peerChatStorage.ID,
 		}
 	}
-	peerUser := storage.GetPeerById(userId)
+	peerUser := ctx.PeerStorage.GetPeerById(userId)
 	if peerUser.ID == 0 {
 		return nil, mtp_errors.ErrPeerNotFound
 	}
@@ -349,7 +352,7 @@ func (ctx *Context) BanChatMember(chatId, userId int64, untilDate int) (tg.Updat
 
 // UnbanChatMember is used to unban a user from a chat.
 func (ctx *Context) UnbanChatMember(chatId, userId int64) (bool, error) {
-	peerChatStorage := storage.GetPeerById(chatId)
+	peerChatStorage := ctx.PeerStorage.GetPeerById(chatId)
 	if peerChatStorage.ID == 0 {
 		return false, mtp_errors.ErrPeerNotFound
 	}
@@ -363,7 +366,7 @@ func (ctx *Context) UnbanChatMember(chatId, userId int64) (bool, error) {
 	default:
 		return false, mtp_errors.ErrNotChannel
 	}
-	peerUser := storage.GetPeerById(userId)
+	peerUser := ctx.PeerStorage.GetPeerById(userId)
 	if peerUser.ID == 0 {
 		return false, mtp_errors.ErrPeerNotFound
 	}
@@ -375,7 +378,7 @@ func (ctx *Context) UnbanChatMember(chatId, userId int64) (bool, error) {
 
 // AddChatMembers is used to add members to a chat
 func (ctx *Context) AddChatMembers(chatId int64, userIds []int64, forwardLimit int) (bool, error) {
-	peerChatStorage := storage.GetPeerById(chatId)
+	peerChatStorage := ctx.PeerStorage.GetPeerById(chatId)
 	if peerChatStorage.ID == 0 {
 		return false, mtp_errors.ErrPeerNotFound
 	}
@@ -395,7 +398,7 @@ func (ctx *Context) AddChatMembers(chatId int64, userIds []int64, forwardLimit i
 	}
 	userPeers := make([]tg.InputUserClass, len(userIds))
 	for i, uId := range userIds {
-		userPeer := storage.GetPeerById(uId)
+		userPeer := ctx.PeerStorage.GetPeerById(uId)
 		if userPeer.ID == 0 {
 			return false, mtp_errors.ErrPeerNotFound
 		}
@@ -418,7 +421,7 @@ func (ctx *Context) AddChatMembers(chatId int64, userIds []int64, forwardLimit i
 func (ctx *Context) ArchiveChats(chatIds []int64) (bool, error) {
 	chatPeers := make([]tg.InputPeerClass, len(chatIds))
 	for i, chatId := range chatIds {
-		peer := storage.GetPeerById(chatId)
+		peer := ctx.PeerStorage.GetPeerById(chatId)
 		if peer.ID == 0 {
 			return false, mtp_errors.ErrPeerNotFound
 		}
@@ -450,7 +453,7 @@ func (ctx *Context) ArchiveChats(chatIds []int64) (bool, error) {
 func (ctx *Context) UnarchiveChats(chatIds []int64) (bool, error) {
 	chatPeers := make([]tg.InputPeerClass, len(chatIds))
 	for i, chatId := range chatIds {
-		peer := storage.GetPeerById(chatId)
+		peer := ctx.PeerStorage.GetPeerById(chatId)
 		if peer.ID == 0 {
 			return false, mtp_errors.ErrPeerNotFound
 		}
@@ -480,14 +483,14 @@ func (ctx *Context) UnarchiveChats(chatIds []int64) (bool, error) {
 // Links:
 //  1. https://core.telegram.org/api/channel
 func (ctx *Context) CreateChannel(title, about string, broadcast bool) (*tg.Channel, error) {
-	return functions.CreateChannel(ctx, ctx.Raw, title, about, broadcast)
+	return functions.CreateChannel(ctx, ctx.Raw, ctx.PeerStorage, title, about, broadcast)
 }
 
 // CreateChat invokes method messages.createChat#9cb126e returning error if any. Creates a new chat.
 func (ctx *Context) CreateChat(title string, userIds []int64) (*tg.Chat, error) {
 	userPeers := make([]tg.InputUserClass, len(userIds))
 	for i, uId := range userIds {
-		userPeer := storage.GetPeerById(uId)
+		userPeer := ctx.PeerStorage.GetPeerById(uId)
 		if userPeer.ID == 0 {
 			return nil, mtp_errors.ErrPeerNotFound
 		}
@@ -499,13 +502,13 @@ func (ctx *Context) CreateChat(title string, userIds []int64) (*tg.Chat, error) 
 			AccessHash: userPeer.AccessHash,
 		}
 	}
-	return functions.CreateChat(ctx, ctx.Raw, title, userPeers)
+	return functions.CreateChat(ctx, ctx.Raw, ctx.PeerStorage, title, userPeers)
 }
 
 // DeleteMessages shall be used to delete messages in a chat with chatId and messageIDs.
 // Returns error if failed to delete.
 func (ctx *Context) DeleteMessages(chatId int64, messageIDs []int) error {
-	peer := storage.GetPeerById(chatId)
+	peer := ctx.PeerStorage.GetPeerById(chatId)
 	if peer.ID == 0 {
 		return mtp_errors.ErrPeerNotFound
 	}
@@ -543,11 +546,11 @@ func (ctx *Context) ForwardMessage(fromChatId, toChatId int64, request *tg.Messa
 // ForwardMessages shall be used to forward messages in a chat with chatId and messageIDs.
 // Returns updatesclass or an error if failed to delete.
 func (ctx *Context) ForwardMessages(fromChatId, toChatId int64, request *tg.MessagesForwardMessagesRequest) (tg.UpdatesClass, error) {
-	fromPeer := storage.GetInputPeerById(fromChatId)
+	fromPeer := ctx.PeerStorage.GetInputPeerById(fromChatId)
 	if fromPeer.Zero() {
 		return nil, fmt.Errorf("fromChatId: %w", mtp_errors.ErrPeerNotFound)
 	}
-	toPeer := storage.GetInputPeerById(toChatId)
+	toPeer := ctx.PeerStorage.GetInputPeerById(toChatId)
 	if toPeer.Zero() {
 		return nil, fmt.Errorf("toChatId: %w", mtp_errors.ErrPeerNotFound)
 	}
@@ -573,11 +576,11 @@ type EditAdminOpts struct {
 
 // PromoteChatMember is used to promote a user in a chat.
 func (ctx *Context) PromoteChatMember(chatId, userId int64, opts *EditAdminOpts) (bool, error) {
-	peerChat := storage.GetPeerById(chatId)
+	peerChat := ctx.PeerStorage.GetPeerById(chatId)
 	if peerChat.ID == 0 {
 		return false, fmt.Errorf("chat: %w", mtp_errors.ErrPeerNotFound)
 	}
-	peerUser := storage.GetPeerById(userId)
+	peerUser := ctx.PeerStorage.GetPeerById(userId)
 	if peerUser.ID == 0 {
 		return false, fmt.Errorf("user: %w", mtp_errors.ErrPeerNotFound)
 	}
@@ -589,11 +592,11 @@ func (ctx *Context) PromoteChatMember(chatId, userId int64, opts *EditAdminOpts)
 
 // DemoteChatMember is used to demote a user in a chat.
 func (ctx *Context) DemoteChatMember(chatId, userId int64, opts *EditAdminOpts) (bool, error) {
-	peerChat := storage.GetPeerById(chatId)
+	peerChat := ctx.PeerStorage.GetPeerById(chatId)
 	if peerChat.ID == 0 {
 		return false, fmt.Errorf("chat: %w", mtp_errors.ErrPeerNotFound)
 	}
-	peerUser := storage.GetPeerById(userId)
+	peerUser := ctx.PeerStorage.GetPeerById(userId)
 	if peerUser.ID == 0 {
 		return false, fmt.Errorf("user: %w", mtp_errors.ErrPeerNotFound)
 	}
@@ -621,7 +624,7 @@ func (ctx *Context) extractContactResolvedPeer(p *tg.ContactsResolvedPeer, err e
 	if err != nil {
 		return &types.EmptyUC{}, err
 	}
-	go functions.SavePeersFromClassArray(p.Chats, p.Users)
+	go functions.SavePeersFromClassArray(ctx.PeerStorage, p.Chats, p.Users)
 	switch p.Peer.(type) {
 	case *tg.PeerChannel:
 		if p.Chats == nil || len(p.Chats) == 0 {
@@ -649,7 +652,7 @@ func (ctx *Context) extractContactResolvedPeer(p *tg.ContactsResolvedPeer, err e
 
 // GetUserProfilePhotos invokes method photos.getUserPhotos#91cd32a8 returning error if any. Returns the list of user photos.
 func (ctx *Context) GetUserProfilePhotos(userId int64, opts *tg.PhotosGetUserPhotosRequest) ([]tg.PhotoClass, error) {
-	peerUser := storage.GetPeerById(userId)
+	peerUser := ctx.PeerStorage.GetPeerById(userId)
 	if peerUser.ID == 0 {
 		return nil, mtp_errors.ErrPeerNotFound
 	}
@@ -677,6 +680,6 @@ func (ctx *Context) ForwardMediaGroup() error {
 // ExportSessionString returns session of authorized account in the form of string.
 // Note: This session string can be used to log back in with the help of gotgproto.
 // Check sessionMaker.SessionType for more information about it.
-func (*Context) ExportSessionString() (string, error) {
-	return functions.EncodeSessionToString(storage.GetSession())
+func (ctx *Context) ExportSessionString() (string, error) {
+	return functions.EncodeSessionToString(ctx.PeerStorage.GetSession())
 }

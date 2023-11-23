@@ -15,15 +15,15 @@ const LatestVersion = 1
 // 	AuthKeyID []byte
 // }
 
-func UpdateSession(session *Session) {
-	tx := SESSION.Begin()
+func (p *PeerStorage) UpdateSession(session *Session) {
+	tx := p.SqlSession.Begin()
 	tx.Save(session)
 	tx.Commit()
 }
 
 // GetSession returns the session saved in storage.
-func GetSession() *Session {
+func (p *PeerStorage) GetSession() *Session {
 	session := &Session{Version: LatestVersion}
-	SESSION.Model(&Session{}).Find(&session)
+	p.SqlSession.Model(&Session{}).Find(&session)
 	return session
 }

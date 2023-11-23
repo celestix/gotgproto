@@ -52,7 +52,7 @@ func (f *SessionStorage) StoreSession(_ context.Context, data []byte) error {
 	f.mux.Lock()
 	defer f.mux.Unlock()
 
-	storage.UpdateSession(&storage.Session{
+	f.Session.PeerStorage.UpdateSession(&storage.Session{
 		Version: storage.LatestVersion,
 		Data:    data,
 	})
