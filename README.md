@@ -43,7 +43,7 @@ func main() {
 		clientType,
 		// Optional parameters of client
 		&gotgproto.ClientOpts{
-			Session: sessionMaker.NewSession("echobot", sessionMaker.Session),
+			Session: sessionMaker.SqliteSession("echobot"),
 		},
 	)
 	if err != nil {
