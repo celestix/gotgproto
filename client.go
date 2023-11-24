@@ -83,6 +83,10 @@ type ClientType struct {
 type ClientOpts struct {
 	// Logger is instance of zap.Logger. No logs by default.
 	Logger *zap.Logger
+	// Whether to store session and peer storage in memory or not
+	//
+	// Note: Sessions and Peers won't be persistent if this field is set to true.
+	InMemory bool
 	// PublicKeys of telegram.
 	//
 	// If not provided, embedded public keys will be used.
