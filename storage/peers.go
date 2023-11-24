@@ -32,9 +32,7 @@ func (p *PeerStorage) AddPeer(iD, accessHash int64, peerType EntityType, userNam
 	peer := &Peer{ID: iD, AccessHash: accessHash, Type: peerType.GetInt(), Username: userName}
 	if p.inMemory {
 		p.peerCache.Set(iD, peer)
-		// PeerMemoryMap[iD] = peer
 	} else {
-		// go setCachePeers(iD, peer)
 		go p.peerCache.Set(iD, peer)
 		tx := p.SqlSession.Begin()
 		tx.Save(peer)
@@ -59,14 +57,6 @@ func (p *PeerStorage) GetPeerById(iD int64) *Peer {
 			return p.cachePeers(iD)
 		}
 		return peer
-		// data := []byte{}
-		// data, err := cache.Cache.Get(strconv.FormatInt(iD, 10))
-		// if err != nil {
-		// 	return cachePeers(iD)
-		// }
-		// var peer Peer
-		// _ = gob.NewDecoder(bytes.NewBuffer(data)).Decode(&peer)
-		// return &peer
 	}
 }
 
@@ -94,6 +84,13 @@ func (p *PeerStorage) GetInputPeerById(iD int64) tg.InputPeerClass {
 // GetInputPeerByUsername finds the provided username in the peer storage and return its tg.InputPeerClass if found.
 func (p *PeerStorage) GetInputPeerByUsername(userName string) tg.InputPeerClass {
 	return getInputPeerFromStoragePeer(p.GetPeerByUsername(userName))
+}
+
+func (p *PeerStorage) cachePeers(id int64) *Peer {
+	var peer = Peer{}
+	p.SqlSession.Where("id = ?", id).Find(&peer)
+	p.peerCache.Set(id, &peer)
+	return &peer
 }
 
 func getInputPeerFromStoragePeer(peer *Peer) tg.InputPeerClass {

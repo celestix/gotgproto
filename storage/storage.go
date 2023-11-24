@@ -47,11 +47,3 @@ func NewPeerStorage(sessionName string, inMemory bool) *PeerStorage {
 	p.peerCache = cacher.NewCacher[int64, *Peer](opts)
 	return &p
 }
-
-func (p *PeerStorage) cachePeers(id int64) *Peer {
-	var peer = Peer{}
-	p.SqlSession.Where("id = ?", id).Find(&peer)
-	// setCachePeers(id, &peer)
-	p.peerCache.Set(id, &peer)
-	return &peer
-}

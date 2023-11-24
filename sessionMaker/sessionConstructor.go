@@ -13,6 +13,17 @@ type SessionConstructor interface {
 	loadSession() (string, []byte, error)
 }
 
+type SimpleSessionConstructor int8
+
+func SimpleSession() *SimpleSessionConstructor {
+	s := SimpleSessionConstructor(0)
+	return &s
+}
+
+func (s *SimpleSessionConstructor) loadSession() (string, []byte, error) {
+	return "gotgproto_simple", nil, nil
+}
+
 type SqliteSessionConstructor struct {
 	name string
 }
