@@ -69,7 +69,7 @@ func (s *SessionName) load() ([]byte, error) {
 		s.PeerStorage = storage.NewPeerStorage("gotgproto.session", false)
 		return loadByStringSession(s.name)
 	default:
-		return loadByDefault(s.PeerStorage, s.name)
+		return s.loadByDefault(s.name)
 	}
 }
 
@@ -126,12 +126,12 @@ func loadByStringSession(value string) ([]byte, error) {
 	return sd.Data, err
 }
 
-func loadByDefault(p *storage.PeerStorage, value string) ([]byte, error) {
+func (s *SessionName) loadByDefault(value string) ([]byte, error) {
 	if value == "" {
 		value = "new"
 	}
-	*p = *storage.NewPeerStorage(fmt.Sprintf("%s.session", value), false)
-	sFD := p.GetSession()
+	s.PeerStorage = storage.NewPeerStorage(fmt.Sprintf("%s.session", value), false)
+	sFD := s.PeerStorage.GetSession()
 	return sFD.Data, nil
 }
 

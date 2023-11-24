@@ -21,6 +21,7 @@ type PeerStorage struct {
 func NewPeerStorage(sessionName string, inMemory bool) *PeerStorage {
 	p := PeerStorage{
 		inMemory: inMemory,
+		peerLock: new(sync.RWMutex),
 	}
 	var opts *cacher.NewCacherOpts
 	if inMemory {
