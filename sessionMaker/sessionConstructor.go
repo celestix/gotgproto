@@ -20,7 +20,7 @@ func SimpleSession() *SimpleSessionConstructor {
 	return &s
 }
 
-func (s *SimpleSessionConstructor) loadSession() (string, []byte, error) {
+func (*SimpleSessionConstructor) loadSession() (string, []byte, error) {
 	return "gotgproto_simple", nil, nil
 }
 
