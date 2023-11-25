@@ -113,6 +113,17 @@ type ClientOpts struct {
 	ErrorHandler dispatcher.ErrorHandler
 	// Custom middlewares
 	Middlewares []telegram.Middleware
+	// Custom Run() Middleware
+	RunMiddleware func(
+		origRun func(
+			ctx context.Context,
+			f func(ctx context.Context) error,
+		) (err error),
+		ctx context.Context,
+		f func(ctx context.Context) (err error),
+	) (err error)
+
+	// todo complete this functionality later:
 	// Custom context(if you need to stop the client from running externally)
 	Ctx       context.Context
 	CtxCancel context.CancelFunc
@@ -348,8 +359,17 @@ func (c *Client) Start(opts *ClientOpts) error {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func(c *Client) {
+		if opts.RunMiddleware == nil {
+			c.err = c.Run(c.ctx, c.initialize(&wg))
+		} else {
+			c.err = opts.RunMiddleware(
+				c.Run,
+				c.ctx,
+				c.initialize(&wg),
+			)
+		}
+
 		c.err = c.Run(c.ctx, c.initialize(&wg))
-		fmt.Println("e")
 	}(c)
 
 	// wait till client starts
