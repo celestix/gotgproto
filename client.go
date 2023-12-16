@@ -277,7 +277,6 @@ func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error 
 		c.Dispatcher.Initialize(ctx, c.Stop, c.Client, self)
 
 		c.PeerStorage.AddPeer(self.ID, self.AccessHash, storage.TypeUser, self.Username)
-
 		// notify channel that client is up
 		wg.Done()
 		c.running = true
@@ -352,6 +351,9 @@ func (c *Client) Start(opts *ClientOpts) error {
 	wg.Add(1)
 	go func(c *Client) {
 		c.err = c.Run(c.ctx, c.initialize(&wg))
+		if c.err != nil {
+			wg.Done()
+		}
 	}(c)
 
 	// wait till client starts
