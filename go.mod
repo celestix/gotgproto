@@ -2,8 +2,6 @@ module github.com/celestix/gotgproto
 
 go 1.21
 
-toolchain go1.21.4
-
 require (
 	github.com/AnimeKaizoku/cacher v1.0.1
 	github.com/go-faster/errors v0.7.0
