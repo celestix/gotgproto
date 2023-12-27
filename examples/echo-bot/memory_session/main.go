@@ -66,7 +66,7 @@ func start(ctx *ext.Context, update *ext.Update) error {
 						},
 						&tg.KeyboardButtonURL{
 							Text: "gotgproto",
-							URL:  "https://github.com/celestix/gotgproto",
+							URL:  "https://github.com/KoNekoD/gotgproto",
 						},
 					},
 				},

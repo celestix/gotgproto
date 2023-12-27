@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/celestix/gotgproto"
-	"github.com/celestix/gotgproto/sessionMaker"
+	"github.com/KoNekoD/gotgproto"
+	"github.com/KoNekoD/gotgproto/sessionMaker"
 )
 
 func main() {
