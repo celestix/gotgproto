@@ -30,7 +30,8 @@ func main() {
 		clientType,
 		// Optional parameters of client
 		&gotgproto.ClientOpts{
-			Session: sessionMaker.NewSession("echobot", sessionMaker.Session),
+			InMemory: true,
+			Session:  sessionMaker.SimpleSession(),
 		},
 	)
 	if err != nil {

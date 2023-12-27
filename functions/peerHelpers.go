@@ -44,8 +44,8 @@ func GetChatFromPeer(ctx context.Context, client *tg.Client, peer tg.PeerClass) 
 }
 
 // GetInputPeerClassFromId finds provided user id in the session storage and returns it if found.
-func GetInputPeerClassFromId(iD int64) tg.InputPeerClass {
-	peer := storage.GetPeerById(iD)
+func GetInputPeerClassFromId(p *storage.PeerStorage, iD int64) tg.InputPeerClass {
+	peer := p.GetPeerById(iD)
 	if peer.ID == 0 {
 		return nil
 	}
@@ -68,20 +68,20 @@ func GetInputPeerClassFromId(iD int64) tg.InputPeerClass {
 	return nil
 }
 
-func SavePeersFromClassArray(cs []tg.ChatClass, us []tg.UserClass) {
+func SavePeersFromClassArray(p *storage.PeerStorage, cs []tg.ChatClass, us []tg.UserClass) {
 	for _, u := range us {
 		u, ok := u.(*tg.User)
 		if !ok {
 			continue
 		}
-		storage.AddPeer(u.ID, u.AccessHash, storage.TypeUser, u.Username)
+		p.AddPeer(u.ID, u.AccessHash, storage.TypeUser, u.Username)
 	}
 	for _, c := range cs {
 		switch c := c.(type) {
 		case *tg.Channel:
-			storage.AddPeer(c.ID, c.AccessHash, storage.TypeChannel, c.Username)
+			p.AddPeer(c.ID, c.AccessHash, storage.TypeChannel, c.Username)
 		case *tg.Chat:
-			storage.AddPeer(c.ID, storage.DefaultAccessHash, storage.TypeChat, storage.DefaultUsername)
+			p.AddPeer(c.ID, storage.DefaultAccessHash, storage.TypeChat, storage.DefaultUsername)
 		}
 	}
 }

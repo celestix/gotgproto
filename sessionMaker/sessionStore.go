@@ -12,8 +12,9 @@ import (
 // SessionStorage implements SessionStorage for file system as file
 // stored in Path.
 type SessionStorage struct {
-	Session *SessionName
-	mux     sync.Mutex
+	data        []byte
+	peerStorage *storage.PeerStorage
+	mux         sync.Mutex
 }
 
 type jsonData struct {
@@ -30,18 +31,7 @@ func (f *SessionStorage) LoadSession(_ context.Context) ([]byte, error) {
 	f.mux.Lock()
 	defer f.mux.Unlock()
 
-	sessionData, err := f.Session.GetData()
-	return sessionData, err
-	// v := jsonData{
-	// 	Version: latestVersion,
-	// 	Data:    *sessionData,
-	// }
-	// data, err := json.Marshal(v)
-	// if err != nil {
-	// 	return nil, errors.Wrap(err, "marshal")
-	// }
-
-	// return data, nil
+	return f.data, nil
 }
 
 // StoreSession stores session to sqlite storage.
@@ -52,7 +42,7 @@ func (f *SessionStorage) StoreSession(_ context.Context, data []byte) error {
 	f.mux.Lock()
 	defer f.mux.Unlock()
 
-	storage.UpdateSession(&storage.Session{
+	f.peerStorage.UpdateSession(&storage.Session{
 		Version: storage.LatestVersion,
 		Data:    data,
 	})

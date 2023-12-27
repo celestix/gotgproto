@@ -52,7 +52,7 @@ func ArchiveChats(context context.Context, client *tg.Client, peers []tg.InputPe
 	return err == nil, err
 }
 
-func CreateChannel(context context.Context, client *tg.Client, title, about string, broadcast bool) (*tg.Channel, error) {
+func CreateChannel(context context.Context, client *tg.Client, p *storage.PeerStorage, title, about string, broadcast bool) (*tg.Channel, error) {
 	udps, err := client.ChannelsCreateChannel(context, &tg.ChannelsCreateChannelRequest{
 		Title:     title,
 		About:     about,
@@ -62,11 +62,11 @@ func CreateChannel(context context.Context, client *tg.Client, title, about stri
 		return nil, err
 	}
 	// Highly experimental value from ChatClass array
-	_, chats, _ := getUpdateFromUpdates(udps)
+	_, chats, _ := getUpdateFromUpdates(udps, p)
 	return chats[0].(*tg.Channel), nil
 }
 
-func CreateChat(context context.Context, client *tg.Client, title string, users []tg.InputUserClass) (*tg.Chat, error) {
+func CreateChat(context context.Context, client *tg.Client, p *storage.PeerStorage, title string, users []tg.InputUserClass) (*tg.Chat, error) {
 	udps, err := client.MessagesCreateChat(context, &tg.MessagesCreateChatRequest{
 		Users: users,
 		Title: title,
@@ -75,7 +75,7 @@ func CreateChat(context context.Context, client *tg.Client, title string, users 
 		return nil, err
 	}
 	// Highly experimental value from ChatClass map
-	_, chats, _ := getUpdateFromUpdates(udps)
+	_, chats, _ := getUpdateFromUpdates(udps, p)
 	return chats[0].(*tg.Chat), nil
 }
 

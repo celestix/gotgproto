@@ -5,7 +5,6 @@ package generic
 
 import (
 	"github.com/KoNekoD/gotgproto/ext"
-	"github.com/KoNekoD/gotgproto/storage"
 	"github.com/KoNekoD/gotgproto/types"
 	"github.com/gotd/td/tg"
 )
@@ -18,7 +17,7 @@ func getIdByUnion[chatUnion ChatUnion](ctx *ext.Context, chat chatUnion) (int64,
 	switch val := any(chat).(type) {
 	case string:
 		username := val
-		peer := storage.GetPeerByUsername(username)
+		peer := ctx.PeerStorage.GetPeerByUsername(username)
 		if peer.ID != 0 {
 			return peer.ID, nil
 		}

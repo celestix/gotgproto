@@ -1,10 +1,11 @@
 package functions
 
 import (
+	"github.com/celestix/gotgproto/storage"
 	"github.com/gotd/td/tg"
 )
 
-func GetNewMessageUpdate(msgData *tg.Message, upds tg.UpdatesClass) *tg.Message {
+func GetNewMessageUpdate(msgData *tg.Message, upds tg.UpdatesClass, p *storage.PeerStorage) *tg.Message {
 	u, ok := upds.(*tg.UpdateShortSentMessage)
 	if ok {
 		msgData.Flags = u.Flags
@@ -16,7 +17,7 @@ func GetNewMessageUpdate(msgData *tg.Message, upds tg.UpdatesClass) *tg.Message 
 		msgData.TTLPeriod = u.TTLPeriod
 		return msgData
 	}
-	for _, update := range GetUpdateClassFromUpdatesClass(upds) {
+	for _, update := range GetUpdateClassFromUpdatesClass(upds, p) {
 		switch u := update.(type) {
 		case *tg.UpdateNewMessage:
 			return GetMessageFromMessageClass(u.Message)
@@ -29,8 +30,8 @@ func GetNewMessageUpdate(msgData *tg.Message, upds tg.UpdatesClass) *tg.Message 
 	return nil
 }
 
-func GetEditMessageUpdate(upds tg.UpdatesClass) *tg.Message {
-	for _, update := range GetUpdateClassFromUpdatesClass(upds) {
+func GetEditMessageUpdate(upds tg.UpdatesClass, p *storage.PeerStorage) *tg.Message {
+	for _, update := range GetUpdateClassFromUpdatesClass(upds, p) {
 		switch u := update.(type) {
 		case *tg.UpdateEditMessage:
 			return GetMessageFromMessageClass(u.Message)
@@ -41,18 +42,18 @@ func GetEditMessageUpdate(upds tg.UpdatesClass) *tg.Message {
 	return nil
 }
 
-func GetUpdateClassFromUpdatesClass(updates tg.UpdatesClass) (u []tg.UpdateClass) {
-	u, _, _ = getUpdateFromUpdates(updates)
+func GetUpdateClassFromUpdatesClass(updates tg.UpdatesClass, p *storage.PeerStorage) (u []tg.UpdateClass) {
+	u, _, _ = getUpdateFromUpdates(updates, p)
 	return
 }
 
-func getUpdateFromUpdates(updates tg.UpdatesClass) ([]tg.UpdateClass, []tg.ChatClass, []tg.UserClass) {
+func getUpdateFromUpdates(updates tg.UpdatesClass, p *storage.PeerStorage) ([]tg.UpdateClass, []tg.ChatClass, []tg.UserClass) {
 	switch u := updates.(type) {
 	case *tg.Updates:
-		go SavePeersFromClassArray(u.Chats, u.Users)
+		go SavePeersFromClassArray(p, u.Chats, u.Users)
 		return u.Updates, u.Chats, u.Users
 	case *tg.UpdatesCombined:
-		go SavePeersFromClassArray(u.Chats, u.Users)
+		go SavePeersFromClassArray(p, u.Chats, u.Users)
 		return u.Updates, u.Chats, u.Users
 	case *tg.UpdateShort:
 		return []tg.UpdateClass{u.Update}, tg.ChatClassArray{}, tg.UserClassArray{}
@@ -72,19 +73,19 @@ func GetMessageFromMessageClass(m tg.MessageClass) *tg.Message {
 // *************************************************
 // *****************INTERNAL-HELPERS****************
 
-func ReturnNewMessageWithError(msgData *tg.Message, upds tg.UpdatesClass, err error) (*tg.Message, error) {
+func ReturnNewMessageWithError(msgData *tg.Message, upds tg.UpdatesClass, p *storage.PeerStorage, err error) (*tg.Message, error) {
 	if err != nil {
 		return nil, err
 	}
 	if msgData == nil {
 		msgData = &tg.Message{}
 	}
-	return GetNewMessageUpdate(msgData, upds), nil
+	return GetNewMessageUpdate(msgData, upds, p), nil
 }
 
-func ReturnEditMessageWithError(upds tg.UpdatesClass, err error) (*tg.Message, error) {
+func ReturnEditMessageWithError(p *storage.PeerStorage, upds tg.UpdatesClass, err error) (*tg.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	return GetEditMessageUpdate(upds), nil
+	return GetEditMessageUpdate(upds, p), nil
 }

@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const VERSION = "v1.0.0-beta13"
+const VERSION = "v1.0.0-beta14"
 
 type Client struct {
 	// Dispatcher handlers the incoming updates and execute mapped handlers. It is recommended to use dispatcher.MakeDispatcher function for this field.
@@ -57,6 +57,8 @@ type Client struct {
 	// Code for the language used on the client, ISO 639-1 standard.
 	ClientLangCode string
 
+	PeerStorage *storage.PeerStorage
+
 	clientType     ClientType
 	ctx            context.Context
 	err            error
@@ -81,6 +83,10 @@ type ClientType struct {
 type ClientOpts struct {
 	// Logger is instance of zap.Logger. No logs by default.
 	Logger *zap.Logger
+	// Whether to store session and peer storage in memory or not
+	//
+	// Note: Sessions and Peers won't be persistent if this field is set to true.
+	InMemory bool
 	// PublicKeys of telegram.
 	//
 	// If not provided, embedded public keys will be used.
@@ -96,11 +102,15 @@ type ClientOpts struct {
 	// Whether to show the copyright line in console or no.
 	DisableCopyright bool
 	// Session info of the authenticated user, use sessionMaker.NewSession function to fill this field.
-	Session *sessionMaker.SessionName
+	Session sessionMaker.SessionConstructor
 	// Setting this field to true will lead to automatically fetch the reply_to_message for a new message update.
 	//
 	// Set to `false` by default.
 	AutoFetchReply bool
+	// Setting this field to true will lead to automatically fetch the entire reply_to_message chain for a new message update.
+	//
+	// Set to `false` by default.
+	FetchEntireReplyChain bool
 	// Code for the language used on the device's OS, ISO 639-1 standard.
 	SystemLangCode string
 	// Code for the language used on the client, ISO 639-1 standard.
@@ -143,26 +153,28 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		ctx, cancel = opts.Ctx, opts.CtxCancel
 	}
 
-	var sessionStorage telegram.SessionStorage
-
-	isInMemory := opts.Session.GetName() == sessionMaker.InMemorySessionName
-	if opts.Session == nil || isInMemory {
-		d, _ := opts.Session.GetData()
-
-		s := session.StorageMemory{}
-		err := s.StoreSession(ctx, d)
-		if err != nil {
-			cancel()
-			return nil, err
-		}
-		sessionStorage = &s
-	} else {
-		sessionStorage = &sessionMaker.SessionStorage{
-			Session: opts.Session,
-		}
+	peerStorage, sessionStorage, err := sessionMaker.NewSessionStorage(ctx, opts.Session, opts.InMemory)
+	if err != nil {
+		cancel()
+		return nil, err
 	}
 
-	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply, opts.ErrorHandler, opts.PanicHandler)
+	// if opts.InMemory {
+	// 	d, _ := opts.Session.GetData()
+	// 	s := session.StorageMemory{}
+	// 	err := s.StoreSession(ctx, d)
+	// 	if err != nil {
+	// 		cancel()
+	// 		return nil, err
+	// 	}
+	// 	sessionStorage = &s
+	// } else {
+	// 	sessionStorage = &sessionMaker.SessionStorage{
+	// 		Session: opts.Session,
+	// 	}
+	// }
+
+	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply, opts.FetchEntireReplyChain, opts.ErrorHandler, opts.PanicHandler, peerStorage)
 
 	// client := telegram.NewClient(appId, apiHash, telegram.Options{
 	//	DCList:         opts.DCList,
@@ -192,6 +204,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		SystemLangCode:   opts.SystemLangCode,
 		ClientLangCode:   opts.ClientLangCode,
 		Dispatcher:       d,
+		PeerStorage:      peerStorage,
 		sessionStorage:   sessionStorage,
 		clientType:       cType,
 		ctx:              ctx,
@@ -281,8 +294,7 @@ func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error 
 
 		c.Dispatcher.Initialize(ctx, c.Stop, c.Client, self)
 
-		storage.AddPeer(self.ID, self.AccessHash, storage.TypeUser, self.Username)
-
+		c.PeerStorage.AddPeer(self.ID, self.AccessHash, storage.TypeUser, self.Username)
 		// notify channel that client is up
 		wg.Done()
 		c.running = true
@@ -296,16 +308,13 @@ func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error 
 // Note: You must not share this string with anyone, it contains auth details for your logged in account.
 func (c *Client) ExportStringSession() (string, error) {
 	// InMemorySession case
-	loadedSessionData, err := c.sessionStorage.LoadSession(c.ctx)
+	loadSession, err := c.sessionStorage.LoadSession(c.ctx)
 	if err == nil {
-		loadedSession := &storage.Session{
-			Version: storage.LatestVersion,
-			Data:    loadedSessionData,
-		}
-		return functions.EncodeSessionToString(loadedSession)
+		return string(loadSession), nil
 	}
 
-	return functions.EncodeSessionToString(storage.GetSession())
+	// todo. what if session is InMemorySession? We got panic
+	return functions.EncodeSessionToString(c.PeerStorage.GetSession())
 }
 
 // Idle keeps the current goroutined blocked until the client is stopped.
@@ -320,6 +329,7 @@ func (c *Client) CreateContext() *ext.Context {
 	return ext.NewContext(
 		c.ctx,
 		c.API(),
+		c.PeerStorage,
 		c.Self,
 		message.NewSender(c.API()),
 		&tg.Entities{
@@ -370,6 +380,9 @@ func (c *Client) Start(opts *ClientOpts) error {
 		}
 
 		c.err = c.Run(c.ctx, c.initialize(&wg))
+		if c.err != nil {
+			wg.Done()
+		}
 	}(c)
 
 	// wait till client starts
