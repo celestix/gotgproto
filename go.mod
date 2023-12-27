@@ -1,4 +1,4 @@
-module github.com/KoNekoD/gotgproto
+module github.com/celestix/gotgproto
 
 go 1.21
 

@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"github.com/KoNekoD/gotgproto/dispatcher/handlers/filters"
-	"github.com/KoNekoD/gotgproto/ext"
+	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
+	"github.com/celestix/gotgproto/ext"
 )
 
 // Message handler is executed when the update consists of tg.Message with provided conditions.

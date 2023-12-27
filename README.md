@@ -1,13 +1,13 @@
-# <a href="https://github.com/KoNekoD/gotgproto"><img src="./gotgproto.png" width="40px" align="left"></img></a> GoTGProto
+# <a href="https://github.com/celestix/gotgproto"><img src="./gotgproto.png" width="40px" align="left"></img></a> GoTGProto
 GoTGProto is a helper package for gotd library, It aims to make td's raw functions easy-to-use with the help of features like using session strings, custom helper functions, storing peers and extracting chat or user ids through it etc.
 
 We have an outstanding userbot project going on with GoTGProto, you can check it out by [clicking here](https://github.com/GigaUserbot/GIGA). 
 
-You can use this package to create bots and userbots with Telegram MTProto easily in golang, for any futher help you can check out the [documentations](https://pkg.go.dev/github.com/KoNekoD/gotgproto) or reach us through the following:
+You can use this package to create bots and userbots with Telegram MTProto easily in golang, for any futher help you can check out the [documentations](https://pkg.go.dev/github.com/celestix/gotgproto) or reach us through the following:
 - Updates Channel: [![Channel](https://img.shields.io/badge/GoTGProto-Channel-dark)](https://telegram.me/gotgproto)
 - Support Chat: [![Chat](https://img.shields.io/badge/GoTGProto-Support%20Chat-red)](https://telegram.me/gotgprotochat)
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/KoNekoD/gotgproto.svg)](https://pkg.go.dev/github.com/KoNekoD/gotgproto) [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
+[![Go Reference](https://pkg.go.dev/badge/github.com/celestix/gotgproto.svg)](https://pkg.go.dev/github.com/celestix/gotgproto) [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
 
 **Note**: This library is in the beta stage yet and may not be stable for every case.
 
@@ -15,7 +15,7 @@ You can use this package to create bots and userbots with Telegram MTProto easil
 You can download the library with the help of standard `go get` command.
 
 ```bash
-go get github.com/KoNekoD/gotgproto
+go get github.com/celestix/gotgproto
 ```
 
 ## Usage
@@ -26,8 +26,8 @@ package main
 import (
 	"log"
 	
-	"github.com/KoNekoD/gotgproto"
-	"github.com/KoNekoD/gotgproto/sessionMaker"
+	"github.com/celestix/gotgproto"
+	"github.com/celestix/gotgproto/sessionMaker"
 )
 
 func main() {

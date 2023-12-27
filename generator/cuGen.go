@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/KoNekoD/gotgproto/generator/parser"
+	"github.com/celestix/gotgproto/generator/parser"
 )
 
 var helperFuncsCUTempl = template.Must(template.New("cuHelpers").Parse(helperFuncsCU))
@@ -108,8 +108,8 @@ const predefinedCU = `
 package generic
 
 import (
-	"github.com/KoNekoD/gotgproto/ext"
-	"github.com/KoNekoD/gotgproto/types"
+	"github.com/celestix/gotgproto/ext"
+	"github.com/celestix/gotgproto/types"
 	"github.com/gotd/td/tg"
 )
 
