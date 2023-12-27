@@ -4,7 +4,6 @@ go 1.21
 
 require (
 	github.com/AnimeKaizoku/cacher v1.0.1
-	github.com/go-faster/errors v0.7.0
 	github.com/gotd/td v0.91.0
 	github.com/pkg/errors v0.9.1
 	go.uber.org/multierr v1.11.0
@@ -15,6 +14,7 @@ require (
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/glebarez/go-sqlite v1.21.2 // indirect
+	github.com/go-faster/errors v0.7.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
