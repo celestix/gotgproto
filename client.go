@@ -308,9 +308,13 @@ func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error 
 // Note: You must not share this string with anyone, it contains auth details for your logged in account.
 func (c *Client) ExportStringSession() (string, error) {
 	// InMemorySession case
-	loadSession, err := c.sessionStorage.LoadSession(c.ctx)
+	loadedSessionData, err := c.sessionStorage.LoadSession(c.ctx)
 	if err == nil {
-		return string(loadSession), nil
+		loadedSession := &storage.Session{
+			Version: storage.LatestVersion,
+			Data:    loadedSessionData,
+		}
+		return functions.EncodeSessionToString(loadedSession)
 	}
 
 	// todo. what if session is InMemorySession? We got panic
