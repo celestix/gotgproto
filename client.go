@@ -383,7 +383,6 @@ func (c *Client) Start(opts *ClientOpts) error {
 			)
 		}
 
-		c.err = c.Run(c.ctx, c.initialize(&wg))
 		if c.err != nil {
 			wg.Done()
 		}
