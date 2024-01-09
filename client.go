@@ -216,6 +216,8 @@ func (c *Client) initTelegramClient(
 		}
 	}
 	c.Client = telegram.NewClient(c.appId, c.apiHash, telegram.Options{
+		DC:             c.DC,
+		Resolver:       c.Resolver,
 		DCList:         c.DCList,
 		UpdateHandler:  c.Dispatcher,
 		SessionStorage: c.sessionStorage,
