@@ -132,6 +132,9 @@ type ClientOpts struct {
 		ctx context.Context,
 		f func(ctx context.Context) (err error),
 	) (err error)
+
+	// Custom context
+	Context context.Context
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -143,7 +146,10 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		}
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	if opts.Context == nil {
+		opts.Context = context.Background()
+	}
+	ctx, cancel := context.WithCancel(opts.Context)
 
 	peerStorage, sessionStorage, err := sessionMaker.NewSessionStorage(ctx, opts.Session, opts.InMemory)
 	if err != nil {
