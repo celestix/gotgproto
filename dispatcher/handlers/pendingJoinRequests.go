@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"github.com/KoNekoD/gotgproto/dispatcher/handlers/filters"
-	"github.com/KoNekoD/gotgproto/ext"
+	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
+	"github.com/celestix/gotgproto/ext"
 )
 
 // PendingJoinRequests handler is executed on all type of incoming updates.

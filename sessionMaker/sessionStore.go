@@ -5,7 +5,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/KoNekoD/gotgproto/storage"
+	"github.com/celestix/gotgproto/storage"
 	"github.com/gotd/td/session"
 )
 

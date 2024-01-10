@@ -8,12 +8,12 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/KoNekoD/gotgproto/dispatcher"
-	intErrors "github.com/KoNekoD/gotgproto/errors"
-	"github.com/KoNekoD/gotgproto/ext"
-	"github.com/KoNekoD/gotgproto/functions"
-	"github.com/KoNekoD/gotgproto/sessionMaker"
-	"github.com/KoNekoD/gotgproto/storage"
+	"github.com/celestix/gotgproto/dispatcher"
+	intErrors "github.com/celestix/gotgproto/errors"
+	"github.com/celestix/gotgproto/ext"
+	"github.com/celestix/gotgproto/functions"
+	"github.com/celestix/gotgproto/sessionMaker"
+	"github.com/celestix/gotgproto/storage"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
@@ -270,7 +270,7 @@ func (c *Client) login() error {
 func (ch *Client) printCredit() {
 	if !ch.DisableCopyright {
 		fmt.Printf(`
-GoTGProto %s, Copyright (C) 2023 Anony <github.com/KoNekoD>
+GoTGProto %s, Copyright (C) 2023 Anony <github.com/celestix>
 Licensed under the terms of GNU General Public License v3
 
 `, VERSION)
