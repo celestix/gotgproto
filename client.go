@@ -132,11 +132,6 @@ type ClientOpts struct {
 		ctx context.Context,
 		f func(ctx context.Context) (err error),
 	) (err error)
-
-	// todo complete this functionality later:
-	// Custom context(if you need to stop the client from running externally)
-	Ctx       context.Context
-	CtxCancel context.CancelFunc
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -149,9 +144,6 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	if opts.Ctx != nil && opts.CtxCancel != nil {
-		ctx, cancel = opts.Ctx, opts.CtxCancel
-	}
 
 	peerStorage, sessionStorage, err := sessionMaker.NewSessionStorage(ctx, opts.Session, opts.InMemory)
 	if err != nil {
