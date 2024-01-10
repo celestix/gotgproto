@@ -2,10 +2,10 @@ package sessionMaker
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/celestix/gotgproto/storage"
-	"github.com/go-faster/errors"
 	"github.com/gotd/td/session"
 )
 

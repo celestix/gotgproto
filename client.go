@@ -123,6 +123,15 @@ type ClientOpts struct {
 	ErrorHandler dispatcher.ErrorHandler
 	// Custom middlewares
 	Middlewares []telegram.Middleware
+	// Custom Run() Middleware
+	RunMiddleware func(
+		origRun func(
+			ctx context.Context,
+			f func(ctx context.Context) error,
+		) (err error),
+		ctx context.Context,
+		f func(ctx context.Context) (err error),
+	) (err error)
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -222,6 +231,7 @@ func (c *Client) initTelegramClient(
 		Logger:         c.Logger,
 		Device:         *device,
 		Middlewares:    middlewares,
+		Resolver:       c.Resolver,
 	})
 }
 
@@ -290,9 +300,13 @@ func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error 
 // Note: You must not share this string with anyone, it contains auth details for your logged in account.
 func (c *Client) ExportStringSession() (string, error) {
 	// InMemorySession case
-	loadSession, err := c.sessionStorage.LoadSession(c.ctx)
+	loadedSessionData, err := c.sessionStorage.LoadSession(c.ctx)
 	if err == nil {
-		return string(loadSession), nil
+		loadedSession := &storage.Session{
+			Version: storage.LatestVersion,
+			Data:    loadedSessionData,
+		}
+		return functions.EncodeSessionToString(loadedSession)
 	}
 
 	// todo. what if session is InMemorySession? We got panic
@@ -346,11 +360,21 @@ func (c *Client) Start(opts *ClientOpts) error {
 	if c.ctx.Err() == context.Canceled {
 		c.ctx, c.cancel = context.WithCancel(context.Background())
 	}
+
 	c.initTelegramClient(opts.Device, opts.Middlewares)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func(c *Client) {
-		c.err = c.Run(c.ctx, c.initialize(&wg))
+		if opts.RunMiddleware == nil {
+			c.err = c.Run(c.ctx, c.initialize(&wg))
+		} else {
+			c.err = opts.RunMiddleware(
+				c.Run,
+				c.ctx,
+				c.initialize(&wg),
+			)
+		}
+
 		if c.err != nil {
 			wg.Done()
 		}
