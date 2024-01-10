@@ -3,9 +3,9 @@ package types
 import (
 	"context"
 
-	"github.com/celestix/gotgproto/errors"
-	"github.com/celestix/gotgproto/functions"
-	"github.com/celestix/gotgproto/storage"
+	"github.com/KoNekoD/gotgproto/errors"
+	"github.com/KoNekoD/gotgproto/functions"
+	"github.com/KoNekoD/gotgproto/storage"
 	"github.com/gotd/td/tg"
 )
 

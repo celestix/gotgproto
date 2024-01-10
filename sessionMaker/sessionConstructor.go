@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/celestix/gotgproto/functions"
-	"github.com/celestix/gotgproto/storage"
+	"github.com/KoNekoD/gotgproto/functions"
+	"github.com/KoNekoD/gotgproto/storage"
 	"github.com/gotd/td/session"
 )
 

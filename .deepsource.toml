@@ -5,4 +5,4 @@ name = "go"
 enabled = true
 
   [analyzers.meta]
-  import_root = "github.com/celestix/gotgproto"
+  import_root = "github.com/KoNekoD/gotgproto"
