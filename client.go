@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/celestix/gotgproto/dispatcher"
 	intErrors "github.com/celestix/gotgproto/errors"
@@ -41,22 +42,37 @@ type Client struct {
 	DCList dcs.List
 	// Resolver to use.
 	Resolver dcs.Resolver
+	// MigrationTimeout configures migration timeout.
+	MigrationTimeout time.Duration
+	// AckBatchSize is limit of MTProto ACK buffer size.
+	AckBatchSize int
+	// AckInterval is maximum time to buffer MTProto ACK.
+	AckInterval time.Duration
+	// RetryInterval is duration between send retries.
+	RetryInterval time.Duration
+	// MaxRetries is limit of send retries.
+	MaxRetries int
+	// ExchangeTimeout is timeout of every key exchange request.
+	ExchangeTimeout time.Duration
+	// DialTimeout is timeout of creating connection.
+	DialTimeout time.Duration
+	// CompressThreshold is a threshold in bytes to determine that message
+	// is large enough to be compressed using GZIP.
+	// If < 0, compression will be disabled.
+	// If == 0, default value will be used.
+	CompressThreshold int
 	// Whether to show the copyright line in console or no.
 	DisableCopyright bool
 	// Logger is instance of zap.Logger. No logs by default.
 	Logger *zap.Logger
-
 	// Session info of the authenticated user, use sessionMaker.NewSession function to fill this field.
 	sessionStorage session.Storage
-
 	// Self contains details of logged in user in the form of *tg.User.
 	Self *tg.User
-
 	// Code for the language used on the device's OS, ISO 639-1 standard.
 	SystemLangCode string
 	// Code for the language used on the client, ISO 639-1 standard.
 	ClientLangCode string
-
 	// PeerStorage is the storage for all the peers.
 	// It is recommended to use storage.NewPeerStorage function for this field.
 	PeerStorage *storage.PeerStorage
@@ -124,26 +140,40 @@ type ClientOpts struct {
 	PanicHandler dispatcher.PanicHandler
 	// Error handles all the unknown errors which are returned by the handler callback functions.
 	ErrorHandler dispatcher.ErrorHandler
-	// Custom middlewares
+	// Custom Middlewares
 	Middlewares []telegram.Middleware
 	// Custom Run() Middleware
 	RunMiddleware func(
-		origRun func(
-			ctx context.Context,
-			f func(ctx context.Context) error,
-		) (err error),
+		origRun func(ctx context.Context, f func(ctx context.Context) error) (err error),
 		ctx context.Context,
 		f func(ctx context.Context) (err error),
 	) (err error)
-
 	// A custom context to use for the client.
 	// If not provided, context.Background() will be used.
 	// Note: This context will be used for the entire lifecycle of the client.
 	Context context.Context
-
 	// AuthConversator is the interface for the authenticator.
 	// gotgproto.BasicConversator is used by default.
 	AuthConversator AuthConversator
+	// MigrationTimeout configures migration timeout.
+	MigrationTimeout time.Duration
+	// AckBatchSize is limit of MTProto ACK buffer size.
+	AckBatchSize int
+	// AckInterval is maximum time to buffer MTProto ACK.
+	AckInterval time.Duration
+	// RetryInterval is duration between send retries.
+	RetryInterval time.Duration
+	// MaxRetries is limit of send retries.
+	MaxRetries int
+	// ExchangeTimeout is timeout of every key exchange request.
+	ExchangeTimeout time.Duration
+	// DialTimeout is timeout of creating connection.
+	DialTimeout time.Duration
+	// CompressThreshold is a threshold in bytes to determine that message
+	// is large enough to be compressed using GZIP.
+	// If < 0, compression will be disabled.
+	// If == 0, default value will be used.
+	CompressThreshold int
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -173,24 +203,32 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply, opts.FetchEntireReplyChain, opts.ErrorHandler, opts.PanicHandler, peerStorage)
 
 	c := Client{
-		Resolver:         opts.Resolver,
-		PublicKeys:       opts.PublicKeys,
-		DC:               opts.DC,
-		DCList:           opts.DCList,
-		DisableCopyright: opts.DisableCopyright,
-		Logger:           opts.Logger,
-		SystemLangCode:   opts.SystemLangCode,
-		ClientLangCode:   opts.ClientLangCode,
-		authConversator:  opts.AuthConversator,
-		Dispatcher:       d,
-		PeerStorage:      peerStorage,
-		sessionStorage:   sessionStorage,
-		clientType:       cType,
-		ctx:              ctx,
-		autoFetchReply:   opts.AutoFetchReply,
-		cancel:           cancel,
-		appId:            appId,
-		apiHash:          apiHash,
+		Resolver:          opts.Resolver,
+		PublicKeys:        opts.PublicKeys,
+		DC:                opts.DC,
+		DCList:            opts.DCList,
+		MigrationTimeout:  opts.MigrationTimeout,
+		AckBatchSize:      opts.AckBatchSize,
+		AckInterval:       opts.AckInterval,
+		RetryInterval:     opts.RetryInterval,
+		MaxRetries:        opts.MaxRetries,
+		ExchangeTimeout:   opts.ExchangeTimeout,
+		DialTimeout:       opts.DialTimeout,
+		CompressThreshold: opts.CompressThreshold,
+		DisableCopyright:  opts.DisableCopyright,
+		Logger:            opts.Logger,
+		SystemLangCode:    opts.SystemLangCode,
+		ClientLangCode:    opts.ClientLangCode,
+		authConversator:   opts.AuthConversator,
+		Dispatcher:        d,
+		PeerStorage:       peerStorage,
+		sessionStorage:    sessionStorage,
+		clientType:        cType,
+		ctx:               ctx,
+		autoFetchReply:    opts.AutoFetchReply,
+		cancel:            cancel,
+		appId:             appId,
+		apiHash:           apiHash,
 	}
 
 	c.printCredit()
@@ -212,14 +250,23 @@ func (c *Client) initTelegramClient(
 		}
 	}
 	c.Client = telegram.NewClient(c.appId, c.apiHash, telegram.Options{
-		DCList:         c.DCList,
-		Resolver:       c.Resolver,
-		DC:             c.DC,
-		UpdateHandler:  c.Dispatcher,
-		SessionStorage: c.sessionStorage,
-		Logger:         c.Logger,
-		Device:         *device,
-		Middlewares:    middlewares,
+		DCList:            c.DCList,
+		Resolver:          c.Resolver,
+		DC:                c.DC,
+		PublicKeys:        c.PublicKeys,
+		MigrationTimeout:  c.MigrationTimeout,
+		AckBatchSize:      c.AckBatchSize,
+		AckInterval:       c.AckInterval,
+		RetryInterval:     c.RetryInterval,
+		MaxRetries:        c.MaxRetries,
+		ExchangeTimeout:   c.ExchangeTimeout,
+		DialTimeout:       c.DialTimeout,
+		CompressThreshold: c.CompressThreshold,
+		UpdateHandler:     c.Dispatcher,
+		SessionStorage:    c.sessionStorage,
+		Logger:            c.Logger,
+		Device:            *device,
+		Middlewares:       middlewares,
 	})
 }
 
@@ -291,8 +338,6 @@ func (c *Client) ExportStringSession() (string, error) {
 		}
 		return functions.EncodeSessionToString(loadedSession)
 	}
-
-	// todo. what if session is InMemorySession? We got panic
 	return functions.EncodeSessionToString(c.PeerStorage.GetSession())
 }
 
