@@ -8,14 +8,18 @@ import (
 
 // AuthConversator is an interface for asking user for auth information.
 type AuthConversator interface {
-	// AskPhoneNumber asks user for phone number.
+	// AskPhoneNumber is called to ask user for phone number.
+	// phone number to login should be returned.
 	AskPhoneNumber() (string, error)
-	// AskPassword asks user for 2FA password.
-	AskPassword() (string, error)
-	// AskCode asks user for auth code.
+	// AskCode is called to ask user for OTP.
+	// OTP should be returned.
 	AskCode() (string, error)
-	// AskRetryCode asks user for retrying 2FA password.
+	// AskPassword is called to ask user for 2FA password.
+	// 2FA password should be returned.
+	AskPassword() (string, error)
+	// RetryPassword is called when the 2FA password is incorrect
 	// attemptsLeft is the number of attempts left.
+	// 2FA password should be returned.
 	RetryPassword(attemptsLeft int) (string, error)
 }
 
