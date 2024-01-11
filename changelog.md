@@ -30,3 +30,17 @@
 - Redesigned session initialization (Now supports logging in with just string session in memory as well as session file)
 - Added `Middlewares` and `Device` fields to `ClientOpts`
 - `ForwardMediaGroup` won't omit error now
+---
+## v1.0.0-beta14
+#### Released on 16 December, 2023
+- Updated to GoTD to v0.91.0 (Layer 167)
+- Adapted pure Go SQLite driver (This means you will no longer need CGO!) #40 (https://github.com/celestix/gotgproto/pull/40) 
+- Redesigned peers storage mechanism and made it compatible for multiple clients 
+- Redesigned session initialization system to make its function simpler and efficient  #38 (https://github.com/celestix/gotgproto/pull/38)
+- Fixed exporting session string #33 (https://github.com/celestix/gotgproto/pull/33)
+- Fixed ability to use dc resolver #35 (https://github.com/celestix/gotgproto/pull/35)
+- Fixed a bug due to which last styled element was not added to styling map #36 (https://github.com/celestix/gotgproto/pull/36)
+- Fixed a bug in retrieving reply-to messages and enhanced it to retrieve entire reply chain #37 (https://github.com/celestix/gotgproto/pull/37)
+- Fixed a bug due to which client would stuck on failed login attempts (due to a deadlock) 
+- Added a few more examples for less confusion
+---
