@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/AnimeKaizoku/cacher v1.0.1
-	github.com/gotd/td v0.91.0
+	github.com/gotd/td v0.93.0
 	github.com/pkg/errors v0.9.1
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
