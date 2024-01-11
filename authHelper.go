@@ -2,14 +2,13 @@ package gotgproto
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
 	"github.com/pkg/errors"
 )
 
-func IfAuthNecessary(c *auth.Client, ctx context.Context, flow Flow) error {
+func ifAuthNecessary(ctx context.Context, c *auth.Client, conversator AuthConversator, phone string, sendOpts auth.SendCodeOptions) error {
 	auth, err := c.Status(ctx)
 	if err != nil {
 		return errors.Wrap(err, "get auth status")
@@ -17,7 +16,7 @@ func IfAuthNecessary(c *auth.Client, ctx context.Context, flow Flow) error {
 	if auth.Authorized {
 		return nil
 	}
-	if err := authFlow(flow, ctx, c); err != nil {
+	if err := authFlow(ctx, c, conversator, phone, sendOpts); err != nil {
 		return errors.Wrap(err, "auth flow")
 	}
 	return nil
@@ -45,7 +44,15 @@ func (f Flow) handleSignUp(ctx context.Context, client auth.FlowClient, phone, h
 	return nil
 }
 
-func authFlow(f Flow, ctx context.Context, client *auth.Client) error {
+func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversator, phone string, sendOpts auth.SendCodeOptions) error {
+	f := Flow(auth.NewFlow(
+		termAuth{
+			phone:       phone,
+			client:      client,
+			conversator: conversator,
+		},
+		auth.SendCodeOptions{},
+	))
 	if f.Auth == nil {
 		return errors.New("no UserAuthenticator provided")
 	}
@@ -70,12 +77,13 @@ func authFlow(f Flow, ctx context.Context, client *auth.Client) error {
 		if errors.Is(signInErr, auth.ErrPasswordAuthNeeded) {
 			err = signInErr
 			for i := 0; err != nil && i < 3; i++ {
-				if i != 0 {
-					fmt.Println("The 2FA Code you just entered seems to be incorrect,")
-					fmt.Println("Attempts Left:", 3-i)
-					fmt.Println("Please try again.... ")
+				var password string
+				var err1 error
+				if i == 0 {
+					password, err1 = f.Auth.Password(ctx)
+				} else {
+					password, err1 = conversator.RetryPassword(3 - i)
 				}
-				password, err1 := f.Auth.Password(ctx)
 				if err1 != nil {
 					return errors.Wrap(err1, "get password")
 				}
@@ -84,9 +92,6 @@ func authFlow(f Flow, ctx context.Context, client *auth.Client) error {
 			if err != nil {
 				return errors.Wrap(err, "sign in with password")
 			}
-			// if _, err := client.Password(ctx, password); err != nil {
-			// 	return errors.Wrap(err, "sign in with password")
-			// }
 			return nil
 		}
 		var signUpRequired *auth.SignUpRequired
@@ -95,7 +100,6 @@ func authFlow(f Flow, ctx context.Context, client *auth.Client) error {
 		}
 
 		if signInErr != nil {
-			// fmt.Println("\n\n", signInErr.Error(), "\n\n ")
 			return errors.Wrap(signInErr, "sign in")
 		}
 	case *tg.AuthSentCodeSuccess:

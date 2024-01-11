@@ -57,14 +57,17 @@ type Client struct {
 	// Code for the language used on the client, ISO 639-1 standard.
 	ClientLangCode string
 
+	// PeerStorage is the storage for all the peers.
+	// It is recommended to use storage.NewPeerStorage function for this field.
 	PeerStorage *storage.PeerStorage
 
-	clientType     ClientType
-	ctx            context.Context
-	err            error
-	autoFetchReply bool
-	cancel         context.CancelFunc
-	running        bool
+	authConversator AuthConversator
+	clientType      ClientType
+	ctx             context.Context
+	err             error
+	autoFetchReply  bool
+	cancel          context.CancelFunc
+	running         bool
 	*telegram.Client
 	appId   int
 	apiHash string
@@ -133,8 +136,14 @@ type ClientOpts struct {
 		f func(ctx context.Context) (err error),
 	) (err error)
 
-	// Custom context
+	// A custom context to use for the client.
+	// If not provided, context.Background() will be used.
+	// Note: This context will be used for the entire lifecycle of the client.
 	Context context.Context
+
+	// AuthConversator is the interface for the authenticator.
+	// gotgproto.BasicConversator is used by default.
+	AuthConversator AuthConversator
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -157,40 +166,11 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		return nil, err
 	}
 
-	// if opts.InMemory {
-	// 	d, _ := opts.Session.GetData()
-	// 	s := session.StorageMemory{}
-	// 	err := s.StoreSession(ctx, d)
-	// 	if err != nil {
-	// 		cancel()
-	// 		return nil, err
-	// 	}
-	// 	sessionStorage = &s
-	// } else {
-	// 	sessionStorage = &sessionMaker.SessionStorage{
-	// 		Session: opts.Session,
-	// 	}
-	// }
+	if opts.AuthConversator == nil {
+		opts.AuthConversator = BasicConversator()
+	}
 
 	d := dispatcher.NewNativeDispatcher(opts.AutoFetchReply, opts.FetchEntireReplyChain, opts.ErrorHandler, opts.PanicHandler, peerStorage)
-
-	// client := telegram.NewClient(appId, apiHash, telegram.Options{
-	//	DCList:         opts.DCList,
-	//	UpdateHandler: d,
-	//	SessionStorage: sessionStorage,
-	//	Logger:         opts.Logger,
-	//	Device: telegram.DeviceConfig{
-	//		DeviceModel:    "GoTGProto",
-	//		SystemVersion:  runtime.GOOS,
-	//		AppVersion:     VERSION,
-	//		SystemLangCode: opts.SystemLangCode,
-	//		LangCode:       opts.ClientLangCode,
-	//	},
-	//	Middlewares: []telegram.Middleware{
-	//		floodwait.NewSimpleWaiter().WithMaxRetries(25),
-	//		ratelimit.New(rate.Every(100*time.Millisecond), 5),
-	//	},
-	// })
 
 	c := Client{
 		Resolver:         opts.Resolver,
@@ -201,6 +181,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		Logger:           opts.Logger,
 		SystemLangCode:   opts.SystemLangCode,
 		ClientLangCode:   opts.ClientLangCode,
+		authConversator:  opts.AuthConversator,
 		Dispatcher:       d,
 		PeerStorage:      peerStorage,
 		sessionStorage:   sessionStorage,
@@ -245,12 +226,7 @@ func (c *Client) login() error {
 	authClient := c.Auth()
 
 	if c.clientType.BotToken == "" {
-		authFlow := auth.NewFlow(termAuth{
-			phone:  c.clientType.Phone,
-			client: authClient,
-		},
-			auth.SendCodeOptions{})
-		if err := IfAuthNecessary(authClient, c.ctx, Flow(authFlow)); err != nil {
+		if err := ifAuthNecessary(c.ctx, authClient, c.authConversator, c.clientType.Phone, auth.SendCodeOptions{}); err != nil {
 			return err
 		}
 	} else {
@@ -270,7 +246,7 @@ func (c *Client) login() error {
 func (ch *Client) printCredit() {
 	if !ch.DisableCopyright {
 		fmt.Printf(`
-GoTGProto %s, Copyright (C) 2023 Anony <github.com/celestix>
+GoTGProto %s, Copyright (C) 2024 Anony <github.com/celestix>
 Licensed under the terms of GNU General Public License v3
 
 `, VERSION)
