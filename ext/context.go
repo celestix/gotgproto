@@ -44,7 +44,7 @@ func NewContext(ctx context.Context, client *tg.Client, peerStorage *storage.Pee
 		Self:        self,
 		Sender:      sender,
 		Entities:    entities,
-		random:      rand.New(rand.NewSource(time.Now().Unix())),
+		random:      rand.New(rand.NewSource(time.Now().UnixNano())),
 		setReply:    setReply,
 		PeerStorage: peerStorage,
 	}
