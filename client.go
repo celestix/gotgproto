@@ -144,7 +144,7 @@ type ClientOpts struct {
 	Middlewares []telegram.Middleware
 	// Custom Run() Middleware
 	// Can be used for floodWaiter package
-	// https://github.com/celestix/gotgproto/blob/beta/examples/echo-bot/memory_session/main.go#L44
+	// https://github.com/celestix/gotgproto/blob/beta/examples/middleware/main.go#L41
 	RunMiddleware func(
 		origRun func(ctx context.Context, f func(ctx context.Context) error) (err error),
 		ctx context.Context,
