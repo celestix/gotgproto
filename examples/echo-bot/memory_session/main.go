@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"github.com/gotd/td/telegram"
 	"log"
 
 	"github.com/celestix/gotgproto"
@@ -12,7 +10,6 @@ import (
 	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/celestix/gotgproto/sessionMaker"
-	"github.com/gotd/contrib/middleware/floodwait"
 	"github.com/gotd/td/tg"
 )
 
@@ -24,11 +21,6 @@ func main() {
 		BotToken: "BOT_TOKEN_HERE",
 	}
 
-	// Initializing flood waiter, you can download package from `go get github.com/gotd/contrib`
-	waiter := floodwait.NewWaiter().WithCallback(func(ctx context.Context, wait floodwait.FloodWait) {
-		fmt.Printf("Waiting for flood, dur: %d\n", wait.Duration)
-	})
-
 	client, err := gotgproto.NewClient(
 		// Get AppID from https://my.telegram.org/apps
 		123456,
@@ -38,14 +30,8 @@ func main() {
 		clientType,
 		// Optional parameters of client
 		&gotgproto.ClientOpts{
-			InMemory:    true,
-			Session:     sessionMaker.SimpleSession(),
-			Middlewares: []telegram.Middleware{waiter},
-			RunMiddleware: func(origRun func(ctx context.Context, f func(ctx context.Context) error) (err error), ctx context.Context, f func(ctx context.Context) (err error)) (err error) {
-				return origRun(ctx, func(ctx context.Context) error {
-					return waiter.Run(ctx, f)
-				})
-			},
+			InMemory: true,
+			Session:  sessionMaker.SimpleSession(),
 		},
 	)
 	if err != nil {
