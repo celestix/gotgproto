@@ -38,18 +38,21 @@ func main() {
 		log.Fatalln("failed to start client:", err)
 	}
 
-	dispatcher := client.Dispatcher
+	clientDispatcher := client.Dispatcher
 
 	// Command Handler for /start
-	dispatcher.AddHandler(handlers.NewCommand("start", start))
+	clientDispatcher.AddHandler(handlers.NewCommand("start", start))
 	// Callback Query Handler with prefix filter for recieving specific query
-	dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("cb_"), buttonCallback))
+	clientDispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("cb_"), buttonCallback))
 	// This Message Handler will call our echo function on new messages
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(filters.Message.Text, echo), 1)
+	clientDispatcher.AddHandlerToGroup(handlers.NewMessage(filters.Message.Text, echo), 1)
 
 	fmt.Printf("client (@%s) has been started...\n", client.Self.Username)
 
-	client.Idle()
+	err = client.Idle()
+	if err != nil {
+		log.Fatalln("failed to start client:", err)
+	}
 }
 
 // callback function for /start command
