@@ -91,6 +91,17 @@ func (ctx *Context) Reply(upd *Update, text interface{}, opts *ReplyOpts) (*type
 		if err != nil {
 			return nil, err
 		}
+	case styling.StyledTextOption:
+		tb := entity.Builder{}
+		if err := styling.Perform(&tb, text); err != nil {
+			return nil, err
+		}
+		m.Message, _ = tb.Complete()
+		u, err := builder.StyledText(ctx, text)
+		m, err = functions.ReturnNewMessageWithError(m, u, ctx.PeerStorage, err)
+		if err != nil {
+			return nil, err
+		}
 	case []styling.StyledTextOption:
 		tb := entity.Builder{}
 		if err := styling.Perform(&tb, text...); err != nil {
