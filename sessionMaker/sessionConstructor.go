@@ -1,12 +1,14 @@
 package sessionMaker
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 
 	"github.com/celestix/gotgproto/functions"
 	"github.com/celestix/gotgproto/storage"
 	"github.com/gotd/td/session"
+	"github.com/gotd/td/session/tdesktop"
 )
 
 type SessionConstructor interface {
@@ -110,4 +112,39 @@ func (s *StringSessionConstructor) loadSession() (string, []byte, error) {
 		return s.name, nil, err
 	}
 	return s.name, sd.Data, err
+}
+
+type TdataSessionConstructor struct {
+	Account tdesktop.Account
+	name    string
+}
+
+func TdataSession(account tdesktop.Account) *TdataSessionConstructor {
+	return &TdataSessionConstructor{Account: account}
+}
+
+func (s *TdataSessionConstructor) Name(name string) *TdataSessionConstructor {
+	s.name = name
+	return s
+}
+
+func (s *TdataSessionConstructor) loadSession() (string, []byte, error) {
+	sd, err := session.TDesktopSession(s.Account)
+	if err != nil {
+		return s.name, nil, err
+	}
+	ctx := context.Background()
+	var (
+		gotdstorage = new(session.StorageMemory)
+		loader      = session.Loader{Storage: gotdstorage}
+	)
+	// Save decoded Telegram Desktop session as gotd session.
+	if err := loader.Save(ctx, sd); err != nil {
+		return s.name, nil, err
+	}
+	data, err := json.Marshal(jsonData{
+		Version: storage.LatestVersion,
+		Data:    *sd,
+	})
+	return s.name, data, err
 }
