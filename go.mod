@@ -4,12 +4,10 @@ go 1.21
 
 require (
 	github.com/AnimeKaizoku/cacher v1.0.1
-	github.com/gotd/contrib v0.19.0
-	github.com/gotd/td v0.96.0
+	github.com/gotd/td v0.98.0
 	github.com/pkg/errors v0.9.1
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.26.0
-	golang.org/x/time v0.5.0
+	go.uber.org/zap v1.27.0
 	gorm.io/gorm v1.25.5
 )
 
@@ -35,15 +33,15 @@ require (
 	github.com/gotd/neo v0.1.5 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/klauspost/compress v1.17.5 // indirect
+	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
-	go.opentelemetry.io/otel v1.22.0 // indirect
-	go.opentelemetry.io/otel/trace v1.22.0 // indirect
+	go.opentelemetry.io/otel v1.23.1 // indirect
+	go.opentelemetry.io/otel/trace v1.23.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/net v0.20.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	nhooyr.io/websocket v1.8.10 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
