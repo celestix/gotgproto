@@ -1,10 +1,12 @@
 package main
 
 import (
+	"log"
+
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/examples/auth-using-api-base/web"
 	"github.com/celestix/gotgproto/sessionMaker"
-	"log"
+	"github.com/glebarez/sqlite"
 )
 
 func main() {
@@ -29,7 +31,7 @@ func main() {
 
 			// custom authenticator using web api
 			AuthConversator: web.GetWebAuth(),
-			Session:         sessionMaker.SqliteSession("webbot"),
+			Session:         sessionMaker.SqlSession(sqlite.Open("webbot")),
 		},
 	)
 	if err != nil {

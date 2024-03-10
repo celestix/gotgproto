@@ -3,16 +3,30 @@ package sessionMaker
 import (
 	"context"
 	"encoding/json"
-	"errors"
 
 	"github.com/celestix/gotgproto/functions"
 	"github.com/celestix/gotgproto/storage"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/session/tdesktop"
+	"gorm.io/gorm"
 )
 
+type sessionName interface {
+	getType() string
+}
+
+type sessionNameString string
+
+func (sessionNameString) getType() string { return "str" }
+
+type sessionNameDialector struct {
+	dialector gorm.Dialector
+}
+
+func (sessionNameDialector) getType() string { return "dialector" }
+
 type SessionConstructor interface {
-	loadSession() (string, []byte, error)
+	loadSession() (sessionName, []byte, error)
 }
 
 type SimpleSessionConstructor int8
@@ -22,25 +36,20 @@ func SimpleSession() *SimpleSessionConstructor {
 	return &s
 }
 
-func (*SimpleSessionConstructor) loadSession() (string, []byte, error) {
-	return "gotgproto_simple", nil, nil
+func (*SimpleSessionConstructor) loadSession() (sessionName, []byte, error) {
+	return sessionNameString("gotgproto_simple"), nil, nil
 }
 
-type SqliteSessionConstructor struct {
-	name string
+type SqlSessionConstructor struct {
+	dialector gorm.Dialector
 }
 
-func SqliteSession(name string) *SqliteSessionConstructor {
-	return &SqliteSessionConstructor{name: name}
+func SqlSession(dialector gorm.Dialector) *SqlSessionConstructor {
+	return &SqlSessionConstructor{dialector: dialector}
 }
 
-var errSqliteSession error = errors.New("sqlite session")
-
-func (s *SqliteSessionConstructor) loadSession() (string, []byte, error) {
-	if s.name == "" {
-		s.name = "new"
-	}
-	return s.name, nil, errSqliteSession
+func (s *SqlSessionConstructor) loadSession() (sessionName, []byte, error) {
+	return &sessionNameDialector{s.dialector}, nil, nil
 }
 
 type PyrogramSessionConstructor struct {
@@ -56,16 +65,16 @@ func (s *PyrogramSessionConstructor) Name(name string) *PyrogramSessionConstruct
 	return s
 }
 
-func (s *PyrogramSessionConstructor) loadSession() (string, []byte, error) {
+func (s *PyrogramSessionConstructor) loadSession() (sessionName, []byte, error) {
 	sd, err := DecodePyrogramSession(s.value)
 	if err != nil {
-		return s.name, nil, err
+		return sessionNameString(s.name), nil, err
 	}
 	data, err := json.Marshal(jsonData{
 		Version: storage.LatestVersion,
 		Data:    *sd,
 	})
-	return s.name, data, err
+	return sessionNameString(s.name), data, err
 }
 
 type TelethonSessionConstructor struct {
@@ -81,16 +90,16 @@ func (s *TelethonSessionConstructor) Name(name string) *TelethonSessionConstruct
 	return s
 }
 
-func (s *TelethonSessionConstructor) loadSession() (string, []byte, error) {
+func (s *TelethonSessionConstructor) loadSession() (sessionName, []byte, error) {
 	sd, err := session.TelethonSession(s.value)
 	if err != nil {
-		return s.name, nil, err
+		return sessionNameString(s.name), nil, err
 	}
 	data, err := json.Marshal(jsonData{
 		Version: storage.LatestVersion,
 		Data:    *sd,
 	})
-	return s.name, data, err
+	return sessionNameString(s.name), data, err
 }
 
 type StringSessionConstructor struct {
@@ -106,12 +115,12 @@ func (s *StringSessionConstructor) Name(name string) *StringSessionConstructor {
 	return s
 }
 
-func (s *StringSessionConstructor) loadSession() (string, []byte, error) {
+func (s *StringSessionConstructor) loadSession() (sessionName, []byte, error) {
 	sd, err := functions.DecodeStringToSession(s.value)
 	if err != nil {
-		return s.name, nil, err
+		return sessionNameString(s.name), nil, err
 	}
-	return s.name, sd.Data, err
+	return sessionNameString(s.name), sd.Data, err
 }
 
 type TdataSessionConstructor struct {
@@ -128,10 +137,10 @@ func (s *TdataSessionConstructor) Name(name string) *TdataSessionConstructor {
 	return s
 }
 
-func (s *TdataSessionConstructor) loadSession() (string, []byte, error) {
+func (s *TdataSessionConstructor) loadSession() (sessionName, []byte, error) {
 	sd, err := session.TDesktopSession(s.Account)
 	if err != nil {
-		return s.name, nil, err
+		return sessionNameString(s.name), nil, err
 	}
 	ctx := context.Background()
 	var (
@@ -140,11 +149,11 @@ func (s *TdataSessionConstructor) loadSession() (string, []byte, error) {
 	)
 	// Save decoded Telegram Desktop session as gotd session.
 	if err := loader.Save(ctx, sd); err != nil {
-		return s.name, nil, err
+		return sessionNameString(s.name), nil, err
 	}
 	data, err := json.Marshal(jsonData{
 		Version: storage.LatestVersion,
 		Data:    *sd,
 	})
-	return s.name, data, err
+	return sessionNameString(s.name), data, err
 }

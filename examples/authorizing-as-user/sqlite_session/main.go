@@ -6,6 +6,7 @@ import (
 
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/sessionMaker"
+	"gorm.io/driver/sqlite"
 )
 
 func main() {
@@ -25,7 +26,7 @@ func main() {
 		clientType,
 		// Optional parameters of client
 		&gotgproto.ClientOpts{
-			Session: sessionMaker.SqliteSession("echobot"),
+			Session: sessionMaker.SqlSession(sqlite.Open("echobot")),
 		},
 	)
 	if err != nil {

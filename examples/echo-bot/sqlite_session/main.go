@@ -10,6 +10,7 @@ import (
 	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
 	"github.com/celestix/gotgproto/ext"
 	"github.com/celestix/gotgproto/sessionMaker"
+	"github.com/glebarez/sqlite"
 	"github.com/gotd/td/tg"
 )
 
@@ -30,7 +31,7 @@ func main() {
 		clientType,
 		// Optional parameters of client
 		&gotgproto.ClientOpts{
-			Session: sessionMaker.SqliteSession("echobot"),
+			Session: sessionMaker.SqlSession(sqlite.Open("echobot")),
 		},
 	)
 	if err != nil {

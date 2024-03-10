@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/AnimeKaizoku/cacher"
-	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -18,7 +17,7 @@ type PeerStorage struct {
 	SqlSession *gorm.DB
 }
 
-func NewPeerStorage(sessionName string, inMemory bool) *PeerStorage {
+func NewPeerStorage(dialector gorm.Dialector, inMemory bool) *PeerStorage {
 	p := PeerStorage{
 		inMemory: inMemory,
 		peerLock: new(sync.RWMutex),
@@ -32,7 +31,7 @@ func NewPeerStorage(sessionName string, inMemory bool) *PeerStorage {
 			CleanInterval: 24 * time.Hour,
 			Revaluate:     true,
 		}
-		db, err := gorm.Open(sqlite.Open(sessionName), &gorm.Config{
+		db, err := gorm.Open(dialector, &gorm.Config{
 			SkipDefaultTransaction: true,
 			Logger:                 logger.Default.LogMode(logger.Silent),
 		})

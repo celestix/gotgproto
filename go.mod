@@ -8,7 +8,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	gorm.io/gorm v1.25.5
+	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
 )
 
 require (
@@ -17,6 +17,7 @@ require (
 	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	modernc.org/libc v1.22.5 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
@@ -42,6 +43,7 @@ require (
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
+	gorm.io/driver/sqlite v1.5.5
 	nhooyr.io/websocket v1.8.10 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
