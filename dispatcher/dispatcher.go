@@ -106,20 +106,16 @@ func (dp *NativeDispatcher) Handle(ctx context.Context, updates tg.UpdatesClass)
 		chats := u.MapChats()
 		e.Chats = chats.ChatToMap()
 		e.Channels = chats.ChannelToMap()
-		go func() {
-			saveUsersPeers(u.Users, dp.pStorage)
-			saveChatsPeers(u.Chats, dp.pStorage)
-		}()
+		go saveUsersPeers(u.Users, dp.pStorage)
+		go saveChatsPeers(u.Chats, dp.pStorage)
 	case *tg.UpdatesCombined:
 		upds = u.Updates
 		e.Users = u.MapUsers().NotEmptyToMap()
 		chats := u.MapChats()
 		e.Chats = chats.ChatToMap()
 		e.Channels = chats.ChannelToMap()
-		go func() {
-			saveUsersPeers(u.Users, dp.pStorage)
-			saveChatsPeers(u.Chats, dp.pStorage)
-		}()
+		go saveUsersPeers(u.Users, dp.pStorage)
+		go saveChatsPeers(u.Chats, dp.pStorage)
 	case *tg.UpdateShort:
 		upds = []tg.UpdateClass{u.Update}
 		e.short()

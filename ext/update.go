@@ -29,6 +29,8 @@ type Update struct {
 	UpdateClass tg.UpdateClass
 	// Entities of an update, i.e. mapped users, chats and channels.
 	Entities *tg.Entities
+	// User id of the user responsible for the update.
+	userId int64
 }
 
 // GetNewUpdate creates a new Update with provided parameters.
@@ -38,10 +40,8 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, p *storage.PeerStorage
 	}
 	switch update := update.(type) {
 	case *tg.UpdateNewMessage:
-		m, ok := update.GetMessage().(*tg.Message)
-		if ok {
-			u.EffectiveMessage = types.ConstructMessage(m)
-		}
+		m := update.GetMessage()
+		u.EffectiveMessage = types.ConstructMessage(m)
 		diff, err := client.UpdatesGetDifference(ctx, &tg.UpdatesGetDifferenceRequest{
 			Pts:  update.Pts - 1,
 			Date: int(time.Now().Unix()),
@@ -69,21 +69,25 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, p *storage.PeerStorage
 				}
 			}
 		}
+		u.fillUserIdFromMessage(m)
 	case message.AnswerableMessageUpdate:
-		m, ok := update.GetMessage().(*tg.Message)
-		if ok {
-			u.EffectiveMessage = types.ConstructMessage(m)
-		}
+		m := update.GetMessage()
+		u.EffectiveMessage = types.ConstructMessage(m)
+		u.fillUserIdFromMessage(m)
 	case *tg.UpdateBotCallbackQuery:
 		u.CallbackQuery = update
+		u.userId = update.UserID
 	case *tg.UpdateBotInlineQuery:
 		u.InlineQuery = update
+		u.userId = update.UserID
 	case *tg.UpdatePendingJoinRequests:
 		u.ChatJoinRequest = update
 	case *tg.UpdateChatParticipant:
 		u.ChatParticipant = update
+		u.userId = update.UserID
 	case *tg.UpdateChannelParticipant:
 		u.ChannelParticipant = update
+		u.userId = update.UserID
 	}
 	u.Entities = e
 	return u
@@ -107,29 +111,10 @@ func (u *Update) EffectiveUser() *tg.User {
 	if u.Entities == nil {
 		return nil
 	}
-	var userId int64
-	switch {
-	case u.EffectiveMessage != nil:
-		uId, ok := u.EffectiveMessage.FromID.(*tg.PeerUser)
-		if !ok {
-			for _, user := range u.Entities.Users {
-				if user.Self && user.Bot {
-					return nil
-				}
-				return user
-			}
-		}
-		userId = uId.UserID
-	case u.CallbackQuery != nil:
-		userId = u.CallbackQuery.UserID
-	case u.InlineQuery != nil:
-		userId = u.InlineQuery.UserID
-	case u.ChatParticipant != nil:
-		userId = u.ChannelParticipant.UserID
-	case u.ChannelParticipant != nil:
-		userId = u.ChannelParticipant.UserID
+	if u.userId != 0 {
+		return nil
 	}
-	return u.Entities.Users[userId]
+	return u.Entities.Users[u.userId]
 }
 
 // GetChat returns the responsible tg.Chat for the current update.
@@ -229,4 +214,20 @@ func (u *Update) EffectiveChat() types.EffectiveChat {
 		return &cn
 	}
 	return &types.EmptyUC{}
+}
+
+func (u *Update) fillUserIdFromMessage(m tg.MessageClass) {
+	var userPeer tg.PeerClass
+	switch _m := m.(type) {
+	case *tg.Message:
+		userPeer = _m.FromID
+	case *tg.MessageService:
+		userPeer = _m.FromID
+	}
+	uId, ok := userPeer.(*tg.PeerUser)
+	if !ok {
+		u.userId = u.Entities.Users[0].ID
+	} else {
+		u.userId = uId.UserID
+	}
 }

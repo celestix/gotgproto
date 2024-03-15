@@ -47,6 +47,6 @@ func (b *basicConservator) AskCode() (string, error) {
 func (b *basicConservator) RetryPassword(trialsLeft int) (string, error) {
 	fmt.Println("The 2FA Code you just entered seems to be incorrect,")
 	fmt.Println("Attempts Left:", trialsLeft)
-	fmt.Println("Please try again.... ")
+	fmt.Println("Please try again....")
 	return b.AskCode()
 }
