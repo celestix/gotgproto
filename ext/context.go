@@ -699,10 +699,15 @@ func getInputFileLocation(media tg.MessageMediaClass) (tg.InputFileLocationClass
 		if !ok {
 			return nil, mtp_errors.ErrUnknownTypeMedia
 		}
+		thumbSize := ""
+		if len(f.Sizes) > 1 {
+			thumbSize = f.Sizes[0].String()
+		}
 		return &tg.InputPhotoFileLocation{
 			ID:            f.ID,
 			AccessHash:    f.AccessHash,
 			FileReference: f.FileReference,
+			ThumbSize:     thumbSize,
 		}, nil
 	case *tg.MessageMediaDocument: // messageMediaDocument#4cf4d72d
 		f, ok := v.Document.AsNotEmpty()
