@@ -52,8 +52,8 @@ func NewContext(ctx context.Context, client *tg.Client, peerStorage *storage.Pee
 	}
 }
 
-func (c *Context) generateRandomID() int64 {
-	return c.random.Int63()
+func (ctx *Context) generateRandomID() int64 {
+	return ctx.random.Int63()
 }
 
 // ReplyOpts object contains optional parameters for Context.Reply.
@@ -692,17 +692,111 @@ func (ctx *Context) ExportSessionString() (string, error) {
 	return functions.EncodeSessionToString(ctx.PeerStorage.GetSession())
 }
 
-func getInputFileLocation(media tg.MessageMediaClass) (tg.InputFileLocationClass, error) {
+// GetMediaFileName
+// Return media's filename in format {name}.{extension}
+// Warning, stickers always will have name sticker.webp, if you need ID, GetMediaFileNameWithId
+func GetMediaFileName(media tg.MessageMediaClass) (string, error) {
+	switch v := media.(type) {
+	case *tg.MessageMediaPhoto: // messageMediaPhoto#695150d7
+		f, ok := v.Photo.AsNotEmpty()
+		if !ok {
+			return "", mtp_errors.ErrUnknownTypeMedia
+		}
+
+		return fmt.Sprintf("%d.png", f.ID), nil
+	case *tg.MessageMediaDocument: // messageMediaDocument#4cf4d72d
+		var (
+			attr             tg.DocumentAttributeClass
+			ok               bool
+			filenameFromAttr *tg.DocumentAttributeFilename
+			f                *tg.Document
+			filename         = "undefined"
+		)
+
+		f, ok = v.Document.AsNotEmpty()
+		if !ok {
+			return "", mtp_errors.ErrUnknownTypeMedia
+		}
+
+		for _, attr = range f.Attributes {
+			filenameFromAttr, ok = attr.(*tg.DocumentAttributeFilename)
+			if ok {
+				filename = filenameFromAttr.FileName
+			}
+		}
+
+		return filename, nil
+	case *tg.MessageMediaStory: // messageMediaStory#68cb6283
+		f, ok := v.Story.(*tg.StoryItem)
+		if !ok {
+			return "", mtp_errors.ErrUnknownTypeMedia
+		}
+		return GetMediaFileName(f.Media)
+	}
+	return "", mtp_errors.ErrUnknownTypeMedia
+}
+
+// GetMediaFileNameWithId
+// Return media's filename in format {id}-{name}.{extension}
+func GetMediaFileNameWithId(media tg.MessageMediaClass) (string, error) {
+	switch v := media.(type) {
+	case *tg.MessageMediaPhoto: // messageMediaPhoto#695150d7
+		f, ok := v.Photo.AsNotEmpty()
+		if !ok {
+			return "", mtp_errors.ErrUnknownTypeMedia
+		}
+
+		return fmt.Sprintf("%d.png", f.ID), nil
+	case *tg.MessageMediaDocument: // messageMediaDocument#4cf4d72d
+		var (
+			attr             tg.DocumentAttributeClass
+			ok               bool
+			filenameFromAttr *tg.DocumentAttributeFilename
+			f                *tg.Document
+			filename         = "undefined"
+		)
+
+		f, ok = v.Document.AsNotEmpty()
+		if !ok {
+			return "", mtp_errors.ErrUnknownTypeMedia
+		}
+
+		for _, attr = range f.Attributes {
+			filenameFromAttr, ok = attr.(*tg.DocumentAttributeFilename)
+			if ok {
+				filename = filenameFromAttr.FileName
+			}
+		}
+
+		return fmt.Sprintf("%d-%s", f.ID, filename), nil
+	case *tg.MessageMediaStory: // messageMediaStory#68cb6283
+		f, ok := v.Story.(*tg.StoryItem)
+		if !ok {
+			return "", mtp_errors.ErrUnknownTypeMedia
+		}
+		return GetMediaFileName(f.Media)
+	}
+	return "", mtp_errors.ErrUnknownTypeMedia
+}
+
+func GetInputFileLocation(media tg.MessageMediaClass) (tg.InputFileLocationClass, error) {
 	switch v := media.(type) {
 	case *tg.MessageMediaPhoto: // messageMediaPhoto#695150d7
 		f, ok := v.Photo.AsNotEmpty()
 		if !ok {
 			return nil, mtp_errors.ErrUnknownTypeMedia
 		}
+		thumbSize := ""
+		if len(f.Sizes) > 1 {
+			// Lowest (f.Sizes[0]) size has the lowest resolution
+			// Highest (f.Sizes[len(f.Sizes)-1]) has the highest resolution
+			thumbSize = f.Sizes[len(f.Sizes)-1].GetType()
+		}
 		return &tg.InputPhotoFileLocation{
 			ID:            f.ID,
 			AccessHash:    f.AccessHash,
 			FileReference: f.FileReference,
+			ThumbSize:     thumbSize,
 		}, nil
 	case *tg.MessageMediaDocument: // messageMediaDocument#4cf4d72d
 		f, ok := v.Document.AsNotEmpty()
@@ -715,7 +809,7 @@ func getInputFileLocation(media tg.MessageMediaClass) (tg.InputFileLocationClass
 		if !ok {
 			return nil, mtp_errors.ErrUnknownTypeMedia
 		}
-		return getInputFileLocation(f.Media)
+		return GetInputFileLocation(f.Media)
 	}
 	return nil, mtp_errors.ErrUnknownTypeMedia
 }
@@ -771,15 +865,15 @@ func (ctx *Context) DownloadMedia(media tg.MessageMediaClass, downloadOutput Dow
 	if opts == nil {
 		opts = &DownloadMediaOpts{}
 	}
-	downloader := downloader.NewDownloader()
+	mediaDownloader := downloader.NewDownloader()
 	if opts.PartSize > 0 {
-		downloader.WithPartSize(opts.PartSize)
+		mediaDownloader.WithPartSize(opts.PartSize)
 	}
-	inputFileLocation, err := getInputFileLocation(media)
+	inputFileLocation, err := GetInputFileLocation(media)
 	if err != nil {
 		return nil, err
 	}
-	d := downloader.Download(ctx.Raw, inputFileLocation)
+	d := mediaDownloader.Download(ctx.Raw, inputFileLocation)
 	if opts.Threads > 0 {
 		d.WithThreads(opts.Threads)
 	}
