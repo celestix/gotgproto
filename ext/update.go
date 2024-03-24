@@ -226,7 +226,9 @@ func (u *Update) fillUserIdFromMessage(m tg.MessageClass) {
 	}
 	uId, ok := userPeer.(*tg.PeerUser)
 	if !ok {
-		u.userId = u.Entities.Users[0].ID
+		if u.Entities != nil {
+			u.userId = u.Entities.Users[0].ID
+		}
 	} else {
 		u.userId = uId.UserID
 	}
