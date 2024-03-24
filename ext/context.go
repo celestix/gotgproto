@@ -779,7 +779,7 @@ func GetMediaFileNameWithId(media tg.MessageMediaClass) (string, error) {
 	return "", mtp_errors.ErrUnknownTypeMedia
 }
 
-func getInputFileLocation(media tg.MessageMediaClass) (tg.InputFileLocationClass, error) {
+func GetInputFileLocation(media tg.MessageMediaClass) (tg.InputFileLocationClass, error) {
 	switch v := media.(type) {
 	case *tg.MessageMediaPhoto: // messageMediaPhoto#695150d7
 		f, ok := v.Photo.AsNotEmpty()
@@ -788,7 +788,9 @@ func getInputFileLocation(media tg.MessageMediaClass) (tg.InputFileLocationClass
 		}
 		thumbSize := ""
 		if len(f.Sizes) > 1 {
-			thumbSize = f.Sizes[0].String()
+			// Lowest (f.Sizes[0]) size has the lowest resolution
+			// Highest (f.Sizes[len(f.Sizes)-1]) has the highest resolution
+			thumbSize = f.Sizes[len(f.Sizes)-1].GetType()
 		}
 		return &tg.InputPhotoFileLocation{
 			ID:            f.ID,
@@ -807,7 +809,7 @@ func getInputFileLocation(media tg.MessageMediaClass) (tg.InputFileLocationClass
 		if !ok {
 			return nil, mtp_errors.ErrUnknownTypeMedia
 		}
-		return getInputFileLocation(f.Media)
+		return GetInputFileLocation(f.Media)
 	}
 	return nil, mtp_errors.ErrUnknownTypeMedia
 }
@@ -867,7 +869,7 @@ func (ctx *Context) DownloadMedia(media tg.MessageMediaClass, downloadOutput Dow
 	if opts.PartSize > 0 {
 		mediaDownloader.WithPartSize(opts.PartSize)
 	}
-	inputFileLocation, err := getInputFileLocation(media)
+	inputFileLocation, err := GetInputFileLocation(media)
 	if err != nil {
 		return nil, err
 	}
