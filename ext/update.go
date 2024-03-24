@@ -70,6 +70,10 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, p *storage.PeerStorage
 			}
 		}
 		u.fillUserIdFromMessage(m)
+	case *tg.UpdateNewChannelMessage:
+		m := update.GetMessage()
+		u.EffectiveMessage = types.ConstructMessage(m)
+		u.fillUserIdFromMessage(m)
 	case message.AnswerableMessageUpdate:
 		m := update.GetMessage()
 		u.EffectiveMessage = types.ConstructMessage(m)
