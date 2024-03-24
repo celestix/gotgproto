@@ -64,5 +64,10 @@ func download(ctx *ext.Context, update *ext.Update) error {
 		return errors.Wrap(err, "failed to download media")
 	}
 
+	_, err = ctx.Reply(update, fmt.Sprintf("File downloaded: %s", filename), nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to reply")
+	}
+
 	return nil
 }
