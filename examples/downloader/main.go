@@ -10,6 +10,8 @@ import (
 	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/go-faster/errors"
 	"log"
+	"os"
+	"strconv"
 )
 
 func main() {
@@ -17,14 +19,20 @@ func main() {
 	// 1.) Bot  (Fill BotToken in this case)
 	// 2.) User (Fill Phone in this case)
 	clientType := gotgproto.ClientType{
-		BotToken: "BOT_TOKEN_HERE",
+		BotToken: os.Getenv("TG_BOT_TOKEN"),
+	}
+
+	appIdEnv := os.Getenv("TG_APP_ID")
+	appId, err := strconv.Atoi(appIdEnv)
+	if err != nil {
+		log.Fatalln("failed to convert app id to int:", err)
 	}
 
 	client, err := gotgproto.NewClient(
 		// Get AppID from https://my.telegram.org/apps
-		123456,
+		appId,
 		// Get ApiHash from https://my.telegram.org/apps
-		"API_HASH_HERE",
+		os.Getenv("TG_API_HASH"),
 		// ClientType, as we defined above
 		clientType,
 		// Optional parameters of client
@@ -51,6 +59,9 @@ func main() {
 }
 
 func download(ctx *ext.Context, update *ext.Update) error {
+	// TODO remove after debug
+	println(update.EffectiveUser().Username)
+
 	filename, err := functions.GetMediaFileNameWithId(update.EffectiveMessage.Media)
 	if err != nil {
 		return errors.Wrap(err, "failed to get media file name")
