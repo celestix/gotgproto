@@ -6,6 +6,7 @@ import (
 	"github.com/celestix/gotgproto/dispatcher/handlers"
 	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
 	"github.com/celestix/gotgproto/ext"
+	"github.com/celestix/gotgproto/functions"
 	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/go-faster/errors"
 	"log"
@@ -50,7 +51,7 @@ func main() {
 }
 
 func download(ctx *ext.Context, update *ext.Update) error {
-	filename, err := ext.GetMediaFileNameWithId(update.EffectiveMessage.Media)
+	filename, err := functions.GetMediaFileNameWithId(update.EffectiveMessage.Media)
 	if err != nil {
 		return errors.Wrap(err, "failed to get media file name")
 	}
@@ -64,10 +65,13 @@ func download(ctx *ext.Context, update *ext.Update) error {
 		return errors.Wrap(err, "failed to download media")
 	}
 
-	_, err = ctx.Reply(update, fmt.Sprintf("File downloaded: %s", filename), nil)
+	msg := fmt.Sprintf(`File "%s" downloaded`, filename)
+	_, err = ctx.Reply(update, msg, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to reply")
 	}
+
+	fmt.Println(msg)
 
 	return nil
 }
