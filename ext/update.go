@@ -70,37 +70,6 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, p *storage.PeerStorage
 			}
 		}
 		u.fillUserIdFromMessage(m)
-	case *tg.UpdateNewChannelMessage:
-		m := update.GetMessage()
-		u.EffectiveMessage = types.ConstructMessage(m)
-		diff, err := client.UpdatesGetDifference(ctx, &tg.UpdatesGetDifferenceRequest{
-			Pts:  update.Pts - 1,
-			Date: int(time.Now().Unix()),
-		})
-		// Silently add catched entities to *tg.Entities
-		if err == nil {
-			if value, ok := diff.(*tg.UpdatesDifference); ok {
-				for _, vu := range value.Chats {
-					switch chat := vu.(type) {
-					case *tg.Chat:
-						go p.AddPeer(chat.ID, storage.DefaultAccessHash, storage.TypeChat, storage.DefaultUsername)
-						e.Chats[chat.ID] = chat
-					case *tg.Channel:
-						go p.AddPeer(chat.ID, chat.AccessHash, storage.TypeChannel, chat.Username)
-						e.Channels[chat.ID] = chat
-					}
-				}
-				for _, vu := range value.Users {
-					user, ok := vu.AsNotEmpty()
-					if !ok {
-						continue
-					}
-					go p.AddPeer(user.ID, user.AccessHash, storage.TypeUser, user.Username)
-					e.Users[user.ID] = user
-				}
-			}
-		}
-		u.fillUserIdFromMessage(m)
 	case message.AnswerableMessageUpdate:
 		m := update.GetMessage()
 		u.EffectiveMessage = types.ConstructMessage(m)
