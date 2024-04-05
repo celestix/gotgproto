@@ -220,17 +220,9 @@ func (u *Update) fillUserIdFromMessage(m tg.MessageClass) {
 	var userPeer tg.PeerClass
 	switch _m := m.(type) {
 	case *tg.Message:
-		if _m.FromID != nil {
-			userPeer = _m.FromID
-		} else {
-			userPeer = _m.PeerID
-		}
+		userPeer = _m.FromID
 	case *tg.MessageService:
-		if _m.FromID != nil {
-			userPeer = _m.FromID
-		} else {
-			userPeer = _m.PeerID
-		}
+		userPeer = _m.FromID
 	}
 
 	uId, ok := userPeer.(*tg.PeerUser)
