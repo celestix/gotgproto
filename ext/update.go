@@ -111,7 +111,7 @@ func (u *Update) EffectiveUser() *tg.User {
 	if u.Entities == nil {
 		return nil
 	}
-	if u.userId != 0 {
+	if u.userId == 0 {
 		return nil
 	}
 	return u.Entities.Users[u.userId]
@@ -224,9 +224,12 @@ func (u *Update) fillUserIdFromMessage(m tg.MessageClass) {
 	case *tg.MessageService:
 		userPeer = _m.FromID
 	}
+
 	uId, ok := userPeer.(*tg.PeerUser)
 	if !ok {
-		u.userId = u.Entities.Users[0].ID
+		if u.Entities != nil {
+			u.userId = u.Entities.Users[0].ID
+		}
 	} else {
 		u.userId = uId.UserID
 	}

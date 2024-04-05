@@ -52,8 +52,8 @@ func NewContext(ctx context.Context, client *tg.Client, peerStorage *storage.Pee
 	}
 }
 
-func (c *Context) generateRandomID() int64 {
-	return c.random.Int63()
+func (ctx *Context) generateRandomID() int64 {
+	return ctx.random.Int63()
 }
 
 // ReplyOpts object contains optional parameters for Context.Reply.
@@ -692,34 +692,6 @@ func (ctx *Context) ExportSessionString() (string, error) {
 	return functions.EncodeSessionToString(ctx.PeerStorage.GetSession())
 }
 
-func getInputFileLocation(media tg.MessageMediaClass) (tg.InputFileLocationClass, error) {
-	switch v := media.(type) {
-	case *tg.MessageMediaPhoto: // messageMediaPhoto#695150d7
-		f, ok := v.Photo.AsNotEmpty()
-		if !ok {
-			return nil, mtp_errors.ErrUnknownTypeMedia
-		}
-		return &tg.InputPhotoFileLocation{
-			ID:            f.ID,
-			AccessHash:    f.AccessHash,
-			FileReference: f.FileReference,
-		}, nil
-	case *tg.MessageMediaDocument: // messageMediaDocument#4cf4d72d
-		f, ok := v.Document.AsNotEmpty()
-		if !ok {
-			return nil, mtp_errors.ErrUnknownTypeMedia
-		}
-		return f.AsInputDocumentFileLocation(), nil
-	case *tg.MessageMediaStory: // messageMediaStory#68cb6283
-		f, ok := v.Story.(*tg.StoryItem)
-		if !ok {
-			return nil, mtp_errors.ErrUnknownTypeMedia
-		}
-		return getInputFileLocation(f.Media)
-	}
-	return nil, mtp_errors.ErrUnknownTypeMedia
-}
-
 // DownloadOutputClass is an interface which is used to download media.
 // It can be one from DownloadOutputStream, DownloadOutputPath and DownloadOutputParallel.
 type DownloadOutputClass interface {
@@ -771,15 +743,15 @@ func (ctx *Context) DownloadMedia(media tg.MessageMediaClass, downloadOutput Dow
 	if opts == nil {
 		opts = &DownloadMediaOpts{}
 	}
-	downloader := downloader.NewDownloader()
+	mediaDownloader := downloader.NewDownloader()
 	if opts.PartSize > 0 {
-		downloader.WithPartSize(opts.PartSize)
+		mediaDownloader.WithPartSize(opts.PartSize)
 	}
-	inputFileLocation, err := getInputFileLocation(media)
+	inputFileLocation, err := functions.GetInputFileLocation(media)
 	if err != nil {
 		return nil, err
 	}
-	d := downloader.Download(ctx.Raw, inputFileLocation)
+	d := mediaDownloader.Download(ctx.Raw, inputFileLocation)
 	if opts.Threads > 0 {
 		d.WithThreads(opts.Threads)
 	}
