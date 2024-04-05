@@ -59,9 +59,6 @@ func main() {
 }
 
 func download(ctx *ext.Context, update *ext.Update) error {
-	// TODO remove after debug
-	println(update.EffectiveUser().Username)
-
 	filename, err := functions.GetMediaFileNameWithId(update.EffectiveMessage.Media)
 	if err != nil {
 		return errors.Wrap(err, "failed to get media file name")

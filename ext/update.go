@@ -111,7 +111,7 @@ func (u *Update) EffectiveUser() *tg.User {
 	if u.Entities == nil {
 		return nil
 	}
-	if u.userId != 0 {
+	if u.userId == 0 {
 		return nil
 	}
 	return u.Entities.Users[u.userId]
