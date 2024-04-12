@@ -37,6 +37,7 @@ type Update struct {
 func GetNewUpdate(ctx context.Context, client *tg.Client, p *storage.PeerStorage, e *tg.Entities, update tg.UpdateClass) *Update {
 	u := &Update{
 		UpdateClass: update,
+		Entities:    e,
 	}
 	switch update := update.(type) {
 	case *tg.UpdateNewMessage:
@@ -89,7 +90,6 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, p *storage.PeerStorage
 		u.ChannelParticipant = update
 		u.userId = update.UserID
 	}
-	u.Entities = e
 	return u
 }
 
@@ -217,20 +217,28 @@ func (u *Update) EffectiveChat() types.EffectiveChat {
 }
 
 func (u *Update) fillUserIdFromMessage(m tg.MessageClass) {
-	var userPeer tg.PeerClass
-	switch _m := m.(type) {
-	case *tg.Message:
-		userPeer = _m.FromID
-	case *tg.MessageService:
-		userPeer = _m.FromID
-	}
-
-	uId, ok := userPeer.(*tg.PeerUser)
-	if !ok {
-		if u.Entities != nil {
-			u.userId = u.Entities.Users[0].ID
+	if u.Entities != nil && u.Entities.Users != nil {
+		for uId := range u.Entities.Users {
+			u.userId = uId
+			break
 		}
-	} else {
-		u.userId = uId.UserID
 	}
+	// var userPeer tg.PeerClass
+	// switch _m := m.(type) {
+	// case *tg.Message:
+	// 	userPeer = _m.FromID
+	// case *tg.MessageService:
+	// 	userPeer = _m.FromID
+	// }
+	// uId, ok := userPeer.(*tg.PeerUser)
+	// if !ok {
+	// 	if u.Entities != nil && u.Entities.Users != nil {
+	// 		for uId := range u.Entities.Users {
+	// 			u.userId = uId
+	// 			break
+	// 		}
+	// 	}
+	// } else {
+	// 	u.userId = uId.UserID
+	// }
 }
