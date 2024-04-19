@@ -53,10 +53,10 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, p *storage.PeerStorage
 				for _, vu := range value.Chats {
 					switch chat := vu.(type) {
 					case *tg.Chat:
-						go p.AddPeer(chat.ID, storage.DefaultAccessHash, storage.TypeChat, storage.DefaultUsername)
+						p.AddPeer(chat.ID, storage.DefaultAccessHash, storage.TypeChat, storage.DefaultUsername)
 						e.Chats[chat.ID] = chat
 					case *tg.Channel:
-						go p.AddPeer(chat.ID, chat.AccessHash, storage.TypeChannel, chat.Username)
+						p.AddPeer(chat.ID, chat.AccessHash, storage.TypeChannel, chat.Username)
 						e.Channels[chat.ID] = chat
 					}
 				}
@@ -65,7 +65,7 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, p *storage.PeerStorage
 					if !ok {
 						continue
 					}
-					go p.AddPeer(user.ID, user.AccessHash, storage.TypeUser, user.Username)
+					p.AddPeer(user.ID, user.AccessHash, storage.TypeUser, user.Username)
 					e.Users[user.ID] = user
 				}
 			}

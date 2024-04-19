@@ -637,7 +637,7 @@ func (ctx *Context) extractContactResolvedPeer(p *tg.ContactsResolvedPeer, err e
 	if err != nil {
 		return &types.EmptyUC{}, err
 	}
-	go functions.SavePeersFromClassArray(ctx.PeerStorage, p.Chats, p.Users)
+	functions.SavePeersFromClassArray(ctx.PeerStorage, p.Chats, p.Users)
 	switch p.Peer.(type) {
 	case *tg.PeerChannel:
 		if p.Chats == nil || len(p.Chats) == 0 {

@@ -50,10 +50,10 @@ func GetUpdateClassFromUpdatesClass(updates tg.UpdatesClass, p *storage.PeerStor
 func getUpdateFromUpdates(updates tg.UpdatesClass, p *storage.PeerStorage) ([]tg.UpdateClass, []tg.ChatClass, []tg.UserClass) {
 	switch u := updates.(type) {
 	case *tg.Updates:
-		go SavePeersFromClassArray(p, u.Chats, u.Users)
+		SavePeersFromClassArray(p, u.Chats, u.Users)
 		return u.Updates, u.Chats, u.Users
 	case *tg.UpdatesCombined:
-		go SavePeersFromClassArray(p, u.Chats, u.Users)
+		SavePeersFromClassArray(p, u.Chats, u.Users)
 		return u.Updates, u.Chats, u.Users
 	case *tg.UpdateShort:
 		return []tg.UpdateClass{u.Update}, tg.ChatClassArray{}, tg.UserClassArray{}

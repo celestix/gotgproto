@@ -34,13 +34,13 @@ func GetChannelMessages(context context.Context, client *tg.Client, p *storage.P
 	}
 	switch m := messages.(type) {
 	case *tg.MessagesMessages:
-		go SavePeersFromClassArray(p, m.Chats, m.Users)
+		SavePeersFromClassArray(p, m.Chats, m.Users)
 		return m.Messages, nil
 	case *tg.MessagesMessagesSlice:
-		go SavePeersFromClassArray(p, m.Chats, m.Users)
+		SavePeersFromClassArray(p, m.Chats, m.Users)
 		return m.Messages, nil
 	case *tg.MessagesChannelMessages:
-		go SavePeersFromClassArray(p, m.Chats, m.Users)
+		SavePeersFromClassArray(p, m.Chats, m.Users)
 		return m.Messages, nil
 	default:
 		return nil, nil
@@ -54,13 +54,13 @@ func GetChatMessages(context context.Context, client *tg.Client, p *storage.Peer
 	}
 	switch m := messages.(type) {
 	case *tg.MessagesMessages:
-		go SavePeersFromClassArray(p, m.Chats, m.Users)
+		SavePeersFromClassArray(p, m.Chats, m.Users)
 		return m.Messages, nil
 	case *tg.MessagesMessagesSlice:
-		go SavePeersFromClassArray(p, m.Chats, m.Users)
+		SavePeersFromClassArray(p, m.Chats, m.Users)
 		return m.Messages, nil
 	case *tg.MessagesChannelMessages:
-		go SavePeersFromClassArray(p, m.Chats, m.Users)
+		SavePeersFromClassArray(p, m.Chats, m.Users)
 		return m.Messages, nil
 	default:
 		return nil, nil

@@ -30,34 +30,34 @@ const (
 
 func (p *PeerStorage) AddPeer(iD, accessHash int64, peerType EntityType, userName string) {
 	peer := &Peer{ID: iD, AccessHash: accessHash, Type: peerType.GetInt(), Username: userName}
+	p.peerCache.Set(iD, peer)
 	if p.inMemory {
-		p.peerCache.Set(iD, peer)
-	} else {
-		go p.peerCache.Set(iD, peer)
-		tx := p.SqlSession.Begin()
-		tx.Save(peer)
-		p.peerLock.Lock()
-		defer p.peerLock.Unlock()
-		tx.Commit()
+		return
 	}
+	go p.addPeerToDb(peer)
+}
+
+func (p *PeerStorage) addPeerToDb(peer *Peer) {
+	tx := p.SqlSession.Begin()
+	tx.Save(peer)
+	p.peerLock.Lock()
+	defer p.peerLock.Unlock()
+	tx.Commit()
 }
 
 // GetPeerById finds the provided id in the peer storage and return it if found.
 func (p *PeerStorage) GetPeerById(iD int64) *Peer {
+	peer, ok := p.peerCache.Get(iD)
 	if p.inMemory {
-		// peer := PeerMemoryMap[iD]
-		peer, ok := p.peerCache.Get(iD)
 		if !ok {
 			return &Peer{}
 		}
-		return peer
 	} else {
-		peer, ok := p.peerCache.Get(iD)
 		if !ok {
 			return p.cachePeers(iD)
 		}
-		return peer
 	}
+	return peer
 }
 
 // GetPeerByUsername finds the provided username in the peer storage and return it if found.
