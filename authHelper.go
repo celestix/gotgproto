@@ -5,6 +5,7 @@ import (
 
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
+	"github.com/gotd/td/tgerr"
 	"github.com/pkg/errors"
 )
 
@@ -57,24 +58,78 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 		return errors.New("no UserAuthenticator provided")
 	}
 
-	phone, err := f.Auth.Phone(ctx)
-	if err != nil {
-		return errors.Wrap(err, "get phone")
+	var (
+		sentCode tg.AuthSentCodeClass
+		err      error
+	)
+	SendAuthStatus(conversator, AuthStatusPhoneAsked)
+	for i := 0; i < 3; i++ {
+		var phone string
+		var err1 error
+		if i == 0 {
+			phone, err1 = f.Auth.Phone(ctx)
+		} else {
+			SendAuthStatusWithRetrials(conversator, AuthStatusPhoneAsked, 3-i)
+			phone, err1 = conversator.AskPhoneNumber()
+		}
+		if err1 != nil {
+			return errors.Wrap(err, "get phone")
+		}
+		sentCode, err = client.SendCode(ctx, phone, f.Options)
+		if err == nil {
+			SendAuthStatus(conversator, AuthStatusPhoneCodeAsked)
+			break
+		}
+		if tgerr.Is(err, "PHONE_NUMBER_INVALID") {
+			continue
+		}
 	}
-
-	sentCode, err := client.SendCode(ctx, phone, f.Options)
 	if err != nil {
+		SendAuthStatus(conversator, AuthStatusPhoneFailed)
 		return err
 	}
+
+	// phone, err := f.Auth.Phone(ctx)
+	// if err != nil {
+	// 	return errors.Wrap(err, "get phone")
+	// }
+
+	// sentCode, err := client.SendCode(ctx, phone, f.Options)
+	// if err != nil {
+	// 	return err
+	// }
 	switch s := sentCode.(type) {
 	case *tg.AuthSentCode:
 		hash := s.PhoneCodeHash
-		code, err := f.Auth.Code(ctx, s)
-		if err != nil {
-			return errors.Wrap(err, "get code")
+		var signInErr error
+		for i := 0; i < 3; i++ {
+			var code string
+			if i == 0 {
+				code, err = f.Auth.Code(ctx, s)
+			} else {
+				SendAuthStatusWithRetrials(conversator, AuthStatusPhoneCodeRetrial, 3-i)
+				code, err = conversator.AskCode()
+			}
+			if err != nil {
+				SendAuthStatus(conversator, AuthStatusPhoneCodeFailed)
+				return errors.Wrap(err, "get code")
+			}
+			_, signInErr = client.SignIn(ctx, phone, code, hash)
+			if signInErr == nil {
+				break
+			}
+			if tgerr.Is(signInErr, "PHONE_CODE_INVALID") {
+				continue
+			}
 		}
-		_, signInErr := client.SignIn(ctx, phone, code, hash)
+		// code, err := f.Auth.Code(ctx, s)
+		// if err != nil {
+		// 	return errors.Wrap(err, "get code")
+		// }
+		// _, signInErr := client.SignIn(ctx, phone, code, hash)
+
 		if errors.Is(signInErr, auth.ErrPasswordAuthNeeded) {
+			SendAuthStatus(conversator, AuthStatusPasswordAsked)
 			err = signInErr
 			for i := 0; err != nil && i < 3; i++ {
 				var password string
@@ -82,14 +137,19 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 				if i == 0 {
 					password, err1 = f.Auth.Password(ctx)
 				} else {
-					password, err1 = conversator.RetryPassword(3 - i)
+					SendAuthStatusWithRetrials(conversator, AuthStatusPasswordRetrial, 3-i)
+					password, err1 = conversator.AskPassword()
 				}
 				if err1 != nil {
 					return errors.Wrap(err1, "get password")
 				}
 				_, err = client.Password(ctx, password)
+				if err == nil {
+					break
+				}
 			}
 			if err != nil {
+				SendAuthStatus(conversator, AuthStatusPasswordFailed)
 				return errors.Wrap(err, "sign in with password")
 			}
 			return nil
@@ -100,11 +160,13 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 		}
 
 		if signInErr != nil {
+			SendAuthStatus(conversator, AuthStatusPhoneCodeFailed)
 			return errors.Wrap(signInErr, "sign in")
 		}
 	case *tg.AuthSentCodeSuccess:
 		switch a := s.Authorization.(type) {
 		case *tg.AuthAuthorization:
+			SendAuthStatus(conversator, AuthStatusSuccess)
 			// Looks that we are already authorized.
 			return nil
 		case *tg.AuthAuthorizationSignUpRequired:

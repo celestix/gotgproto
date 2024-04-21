@@ -8,7 +8,12 @@ import (
 // Start a web server and wait
 func Start() {
 	http.HandleFunc("/", setInfo)
+	http.HandleFunc("/getAuthStatus", getAuthStatus)
 	http.ListenAndServe(":9997", nil)
+}
+
+func getAuthStatus(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprint(w, authStatus)
 }
 
 // setInfo handle user info, set phone, code or passwd
