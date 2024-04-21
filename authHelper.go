@@ -64,7 +64,7 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 
 	sentCode, err := client.SendCode(ctx, phone, f.Options)
 	if err != nil {
-		return errors.Wrap(err, "send code")
+		return err
 	}
 	switch s := sentCode.(type) {
 	case *tg.AuthSentCode:
