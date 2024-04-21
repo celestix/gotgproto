@@ -2,9 +2,9 @@ package gotgproto
 
 import (
 	"context"
-
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
+	"github.com/gotd/td/tgerr"
 	"github.com/pkg/errors"
 )
 
@@ -66,14 +66,26 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 	if err != nil {
 		return errors.Wrap(err, "send code")
 	}
+
 	switch s := sentCode.(type) {
 	case *tg.AuthSentCode:
-		hash := s.PhoneCodeHash
-		code, err := f.Auth.Code(ctx, s)
-		if err != nil {
-			return errors.Wrap(err, "get code")
+		var (
+			code string
+			hash = s.PhoneCodeHash
+		)
+
+		var signInErr error
+		for i := 0; i < 3; i++ {
+			if code, err = f.Auth.Code(ctx, s); err != nil {
+				return errors.Wrap(err, "get code")
+			}
+
+			_, signInErr = client.SignIn(ctx, phone, code, hash)
+			if !tgerr.Is(signInErr, "PHONE_CODE_INVALID") {
+				break
+			}
 		}
-		_, signInErr := client.SignIn(ctx, phone, code, hash)
+
 		if errors.Is(signInErr, auth.ErrPasswordAuthNeeded) {
 			err = signInErr
 			for i := 0; err != nil && i < 3; i++ {
