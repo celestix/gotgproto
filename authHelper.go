@@ -154,11 +154,11 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 		if errors.As(signInErr, &signUpRequired) {
 			return f.handleSignUp(ctx, client, phone, hash, signUpRequired)
 		}
-
 		if signInErr != nil {
 			SendAuthStatus(conversator, AuthStatusPhoneCodeFailed)
 			return errors.Wrap(signInErr, "sign in")
 		}
+		SendAuthStatus(conversator, AuthStatusSuccess)
 	case *tg.AuthSentCodeSuccess:
 		switch a := s.Authorization.(type) {
 		case *tg.AuthAuthorization:
