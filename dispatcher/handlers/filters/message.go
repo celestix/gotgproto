@@ -15,6 +15,32 @@ func (*messageFilters) All(_ *types.Message) bool {
 	return true
 }
 
+type ChatType int
+
+const (
+	ChatTypeUser ChatType = iota
+	ChatTypeChat
+	ChatTypeChannel
+)
+
+func (*messageFilters) ChatType(chatType ChatType) MessageFilter {
+	return func(m *types.Message) bool {
+		chatPeer := m.PeerID
+		switch chatType {
+		case ChatTypeUser:
+			_, ok := chatPeer.(*tg.PeerUser)
+			return ok
+		case ChatTypeChat:
+			_, ok := chatPeer.(*tg.PeerChat)
+			return ok
+		case ChatTypeChannel:
+			_, ok := chatPeer.(*tg.PeerChannel)
+			return ok
+		}
+		return false
+	}
+}
+
 // Chat allows the types.Message update to process if it is from that particular chat.
 func (*messageFilters) Chat(chatId int64) MessageFilter {
 	return func(m *types.Message) bool {
