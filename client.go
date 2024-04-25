@@ -76,6 +76,9 @@ type Client struct {
 	// PeerStorage is the storage for all the peers.
 	// It is recommended to use storage.NewPeerStorage function for this field.
 	PeerStorage *storage.PeerStorage
+	// NoAutoAuth is a flag to disable automatic authentication
+	// if the current session is invalid.
+	NoAutoAuth bool
 
 	authConversator AuthConversator
 	clientType      ClientType
@@ -176,6 +179,9 @@ type ClientOpts struct {
 	// If < 0, compression will be disabled.
 	// If == 0, default value will be used.
 	CompressThreshold int
+	// NoAutoAuth is a flag to disable automatic authentication
+	// if the current session is invalid.
+	NoAutoAuth bool
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -221,6 +227,7 @@ func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*
 		Logger:            opts.Logger,
 		SystemLangCode:    opts.SystemLangCode,
 		ClientLangCode:    opts.ClientLangCode,
+		NoAutoAuth:        opts.NoAutoAuth,
 		authConversator:   opts.AuthConversator,
 		Dispatcher:        d,
 		PeerStorage:       peerStorage,
@@ -276,8 +283,24 @@ func (c *Client) login() error {
 	authClient := c.Auth()
 
 	if c.clientType.BotToken == "" {
-		if err := ifAuthNecessary(c.ctx, authClient, c.authConversator, c.clientType.Phone, auth.SendCodeOptions{}); err != nil {
-			return err
+		status, err := authClient.Status(c.ctx)
+		if err != nil {
+			return errors.Wrap(err, "get auth status")
+		}
+		if status.Authorized {
+			return nil
+		}
+		if c.NoAutoAuth {
+			return intErrors.ErrSessionUnauthorized
+		}
+		err = authFlow(
+			c.ctx, authClient,
+			c.authConversator,
+			c.clientType.Phone,
+			auth.SendCodeOptions{},
+		)
+		if err != nil {
+			return errors.Wrap(err, "auth flow")
 		}
 	} else {
 		status, err := authClient.Status(c.ctx)

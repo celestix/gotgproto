@@ -9,21 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-func ifAuthNecessary(ctx context.Context, c *auth.Client, conversator AuthConversator, phone string, sendOpts auth.SendCodeOptions) error {
-	auth, err := c.Status(ctx)
-	if err != nil {
-		return errors.Wrap(err, "get auth status")
-	}
-	if auth.Authorized {
-		return nil
-	}
-	if err := authFlow(ctx, c, conversator, phone, sendOpts); err != nil {
-		return errors.Wrap(err, "auth flow")
-	}
-	return nil
-
-}
-
 type Flow auth.Flow
 
 func (f Flow) handleSignUp(ctx context.Context, client auth.FlowClient, phone, hash string, s *auth.SignUpRequired) error {

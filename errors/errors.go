@@ -4,6 +4,7 @@ import "errors"
 
 var (
 	ErrClientAlreadyRunning = errors.New("client is already running")
+	ErrSessionUnauthorized  = errors.New("session is unauthorized")
 )
 
 var (
