@@ -32,16 +32,13 @@ import (
 )
 
 func main() {
-	clientType := gotgproto.ClientType{
-		Phone: "PHONE_NUMBER_HERE",
-	}
 	client, err := gotgproto.NewClient(
 		// Get AppID from https://my.telegram.org/apps
 		123456,
 		// Get ApiHash from https://my.telegram.org/apps
 		"API_HASH_HERE",
 		// ClientType, as we defined above
-		clientType,
+		gotgproto.ClientTypePhone("PHONE_NUMBER_HERE"),
 		// Optional parameters of client
 		&gotgproto.ClientOpts{
 			Session: sessionMaker.SqlSession(sqlite.Open("echobot")),
