@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"strconv"
+
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/dispatcher/handlers"
 	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
@@ -9,19 +13,9 @@ import (
 	"github.com/celestix/gotgproto/functions"
 	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/go-faster/errors"
-	"log"
-	"os"
-	"strconv"
 )
 
 func main() {
-	// Type of client to login to, can be of 2 types:
-	// 1.) Bot  (Fill BotToken in this case)
-	// 2.) User (Fill Phone in this case)
-	clientType := gotgproto.ClientType{
-		BotToken: os.Getenv("TG_BOT_TOKEN"),
-	}
-
 	appIdEnv := os.Getenv("TG_APP_ID")
 	appId, err := strconv.Atoi(appIdEnv)
 	if err != nil {
@@ -34,7 +28,7 @@ func main() {
 		// Get ApiHash from https://my.telegram.org/apps
 		os.Getenv("TG_API_HASH"),
 		// ClientType, as we defined above
-		clientType,
+		gotgproto.ClientTypePhone("PHONE_NUMBER_HERE"),
 		// Optional parameters of client
 		&gotgproto.ClientOpts{
 			InMemory: true,

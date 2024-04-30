@@ -81,7 +81,7 @@ type Client struct {
 	NoAutoAuth bool
 
 	authConversator AuthConversator
-	clientType      ClientType
+	clientType      clientType
 	ctx             context.Context
 	err             error
 	autoFetchReply  bool
@@ -90,16 +90,6 @@ type Client struct {
 	*telegram.Client
 	appId   int
 	apiHash string
-}
-
-// Type of client to login to, can be of 2 types:
-// 1.) Bot  (Fill BotToken in this case)
-// 2.) User (Fill Phone in this case)
-type ClientType struct {
-	// BotToken is the unique API Token for the bot you're trying to authorize, get it from @BotFather.
-	BotToken string
-	// Mobile number of the authenticating user.
-	Phone string
 }
 
 type ClientOpts struct {
@@ -185,7 +175,7 @@ type ClientOpts struct {
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
-func NewClient(appId int, apiHash string, cType ClientType, opts *ClientOpts) (*Client, error) {
+func NewClient(appId int, apiHash string, cType clientType, opts *ClientOpts) (*Client, error) {
 	if opts == nil {
 		opts = &ClientOpts{
 			SystemLangCode: "en",
@@ -281,34 +271,29 @@ func (c *Client) initTelegramClient(
 
 func (c *Client) login() error {
 	authClient := c.Auth()
-
-	if c.clientType.BotToken == "" {
-		status, err := authClient.Status(c.ctx)
-		if err != nil {
-			return errors.Wrap(err, "get auth status")
-		}
-		if status.Authorized {
-			return nil
-		}
-		if c.NoAutoAuth {
-			return intErrors.ErrSessionUnauthorized
-		}
+	status, err := authClient.Status(c.ctx)
+	if err != nil {
+		return errors.Wrap(err, "auth status")
+	}
+	if status.Authorized {
+		return nil
+	}
+	if c.NoAutoAuth {
+		return intErrors.ErrSessionUnauthorized
+	}
+	if c.clientType.getType() == clientTypeVPhone {
 		err = authFlow(
 			c.ctx, authClient,
 			c.authConversator,
-			c.clientType.Phone,
+			c.clientType.getValue(),
 			auth.SendCodeOptions{},
 		)
 		if err != nil {
 			return errors.Wrap(err, "auth flow")
 		}
 	} else {
-		status, err := authClient.Status(c.ctx)
-		if err != nil {
-			return errors.Wrap(err, "auth status")
-		}
 		if !status.Authorized {
-			if _, err := c.Auth().Bot(c.ctx, c.clientType.BotToken); err != nil {
+			if _, err := c.Auth().Bot(c.ctx, c.clientType.getValue()); err != nil {
 				return errors.Wrap(err, "login")
 			}
 		}

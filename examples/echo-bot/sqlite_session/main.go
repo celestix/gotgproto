@@ -15,20 +15,13 @@ import (
 )
 
 func main() {
-	// Type of client to login to, can be of 2 types:
-	// 1.) Bot  (Fill BotToken in this case)
-	// 2.) User (Fill Phone in this case)
-	clientType := gotgproto.ClientType{
-		BotToken: "BOT_TOKEN_HERE",
-	}
-
 	client, err := gotgproto.NewClient(
 		// Get AppID from https://my.telegram.org/apps
 		123456,
 		// Get ApiHash from https://my.telegram.org/apps
 		"API_HASH_HERE",
 		// ClientType, as we defined above
-		clientType,
+		gotgproto.ClientTypeBot("BOT_TOKEN_HERE"),
 		// Optional parameters of client
 		&gotgproto.ClientOpts{
 			Session: sessionMaker.SqlSession(sqlite.Open("echobot")),

@@ -19,7 +19,7 @@ func main() {
 		// Get ApiHash from https://my.telegram.org/apps
 		"API_HASH_HERE",
 		// ClientType, as we defined above
-		gotgproto.ClientType{},
+		gotgproto.ClientTypePhone(""),
 		// Optional parameters of client
 		&gotgproto.ClientOpts{
 

@@ -22,20 +22,13 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// Type of client to login to, can be of 2 types:
-	// 1.) Bot  (Fill BotToken in this case)
-	// 2.) User (Fill Phone in this case)
-	clientType := gotgproto.ClientType{
-		Phone: "PHONE_NUMBER_HERE",
-	}
-
 	client, err := gotgproto.NewClient(
 		// Get AppID from https://my.telegram.org/apps
 		123456,
 		// Get ApiHash from https://my.telegram.org/apps
 		"API_HASH_HERE",
 		// ClientType, as we defined above
-		clientType,
+		gotgproto.ClientTypePhone("PHONE_NUMBER_HERE"),
 		// Optional parameters of client
 		&gotgproto.ClientOpts{
 			// There can be up to 3 tdesktop.Account, we consider here there is
