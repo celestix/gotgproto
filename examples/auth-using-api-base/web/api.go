@@ -8,18 +8,18 @@ import (
 )
 
 // Start a web server and wait
-func Start() {
-	http.HandleFunc("/", setInfo)
-	http.HandleFunc("/getAuthStatus", getAuthStatus)
+func Start(wa *webAuth) {
+	http.HandleFunc("/", wa.setInfo)
+	http.HandleFunc("/getAuthStatus", wa.getAuthStatus)
 	http.ListenAndServe(":9997", nil)
 }
 
-func getAuthStatus(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprint(w, authStatus.Event)
+func (wa *webAuth) getAuthStatus(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprint(w, wa.authStatus.Event)
 }
 
 // setInfo handle user info, set phone, code or passwd
-func setInfo(w http.ResponseWriter, req *http.Request) {
+func (wa *webAuth) setInfo(w http.ResponseWriter, req *http.Request) {
 	action := req.URL.Query().Get("set")
 
 	switch action {
@@ -28,26 +28,26 @@ func setInfo(w http.ResponseWriter, req *http.Request) {
 		fmt.Println("Rec phone")
 		num := req.URL.Query().Get("phone")
 		phone := "+" + num
-		ReceivePhone(phone)
-		for authStatus.Event == gotgproto.AuthStatusPhoneAsked ||
-			authStatus.Event == gotgproto.AuthStatusPhoneRetrial {
+		wa.ReceivePhone(phone)
+		for wa.authStatus.Event == gotgproto.AuthStatusPhoneAsked ||
+			wa.authStatus.Event == gotgproto.AuthStatusPhoneRetrial {
 			continue
 		}
 	case "code":
 		fmt.Println("Rec code")
 		code := req.URL.Query().Get("code")
-		ReceiveCode(code)
-		for authStatus.Event == gotgproto.AuthStatusPhoneCodeAsked ||
-			authStatus.Event == gotgproto.AuthStatusPhoneCodeRetrial {
+		wa.ReceiveCode(code)
+		for wa.authStatus.Event == gotgproto.AuthStatusPhoneCodeAsked ||
+			wa.authStatus.Event == gotgproto.AuthStatusPhoneCodeRetrial {
 			continue
 		}
 	case "passwd":
 		passwd := req.URL.Query().Get("passwd")
-		ReceivePasswd(passwd)
-		for authStatus.Event == gotgproto.AuthStatusPasswordAsked ||
-			authStatus.Event == gotgproto.AuthStatusPasswordRetrial {
+		wa.ReceivePasswd(passwd)
+		for wa.authStatus.Event == gotgproto.AuthStatusPasswordAsked ||
+			wa.authStatus.Event == gotgproto.AuthStatusPasswordRetrial {
 			continue
 		}
 	}
-	w.Write([]byte(authStatus.Event))
+	w.Write([]byte(wa.authStatus.Event))
 }
