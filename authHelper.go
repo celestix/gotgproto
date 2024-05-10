@@ -59,7 +59,9 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 		if err1 != nil {
 			return errors.Wrap(err, "get phone")
 		}
-		sentCode, err = client.SendCode(ctx, phone, f.Options)
+		if sendOpts.PhoneCodeHash != "" {
+			sentCode, err = client.SendCode(ctx, phone, f.Options)
+		}
 		if tgerr.Is(err, "PHONE_NUMBER_INVALID") {
 			continue
 		}
@@ -79,9 +81,16 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 	// if err != nil {
 	// 	return err
 	// }
+	var hash string
+	if sendOpts.PhoneCodeHash == "" {
+		sentCode = &tg.AuthSentCode{}
+		hash = sendOpts.PhoneCodeHash
+	}
 	switch s := sentCode.(type) {
 	case *tg.AuthSentCode:
-		hash := s.PhoneCodeHash
+		if sendOpts.PhoneCodeHash != "" {
+			hash = s.PhoneCodeHash
+		}
 		var signInErr error
 		for i := 0; i < 3; i++ {
 			var code string
