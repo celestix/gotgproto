@@ -7,8 +7,8 @@ import (
 	"log"
 	"runtime/debug"
 
-	"github.com/celestix/gotgproto/ext"
-	"github.com/celestix/gotgproto/storage"
+	"github.com/amupxm/gotgproto/ext"
+	"github.com/amupxm/gotgproto/storage"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"

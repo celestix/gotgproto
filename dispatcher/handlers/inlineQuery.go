@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
-	"github.com/celestix/gotgproto/ext"
+	"github.com/amupxm/gotgproto/dispatcher/handlers/filters"
+	"github.com/amupxm/gotgproto/ext"
 )
 
 // InlineQuery handler is executed when the update consists of tg.UpdateInlineBotCallbackQuery.

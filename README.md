@@ -27,7 +27,7 @@ import (
 	"log"
 	
 	"github.com/celestix/gotgproto"
-	"github.com/celestix/gotgproto/sessionMaker"
+	"github.com/amupxm/gotgproto/sessionMaker"
 	"github.com/glebarez/sqlite"
 )
 

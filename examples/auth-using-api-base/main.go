@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
+	"github.com/amupxm/gotgproto/examples/auth-using-api-base/web"
+	"github.com/amupxm/gotgproto/sessionMaker"
 	"github.com/celestix/gotgproto"
-	"github.com/celestix/gotgproto/examples/auth-using-api-base/web"
-	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/glebarez/sqlite"
 )
 

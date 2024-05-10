@@ -3,8 +3,8 @@ package filters
 import (
 	"regexp"
 
-	"github.com/celestix/gotgproto/functions"
-	"github.com/celestix/gotgproto/types"
+	"github.com/amupxm/gotgproto/functions"
+	"github.com/amupxm/gotgproto/types"
 	"github.com/gotd/td/tg"
 )
 

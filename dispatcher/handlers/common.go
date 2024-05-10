@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/celestix/gotgproto/ext"
+	"github.com/amupxm/gotgproto/ext"
 )
 
 // CallbackResponse is the function which will be called on a handler's execution.

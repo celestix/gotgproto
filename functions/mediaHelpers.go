@@ -2,7 +2,7 @@ package functions
 
 import (
 	"fmt"
-	mtp_errors "github.com/celestix/gotgproto/errors"
+	mtp_errors "github.com/amupxm/gotgproto/errors"
 	"github.com/gotd/td/tg"
 )
 

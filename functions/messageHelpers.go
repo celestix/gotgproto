@@ -3,8 +3,8 @@ package functions
 import (
 	"context"
 
-	"github.com/celestix/gotgproto/errors"
-	"github.com/celestix/gotgproto/storage"
+	"github.com/amupxm/gotgproto/errors"
+	"github.com/amupxm/gotgproto/storage"
 	"github.com/gotd/td/tg"
 )
 

@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	intErrors "github.com/celestix/gotgproto/errors"
-	"github.com/celestix/gotgproto/ext"
-	"github.com/celestix/gotgproto/functions"
-	"github.com/celestix/gotgproto/sessionMaker"
-	"github.com/celestix/gotgproto/storage"
+	"github.com/amupxm/gotgproto/dispatcher"
+	intErrors "github.com/amupxm/gotgproto/errors"
+	"github.com/amupxm/gotgproto/ext"
+	"github.com/amupxm/gotgproto/functions"
+	"github.com/amupxm/gotgproto/sessionMaker"
+	"github.com/amupxm/gotgproto/storage"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
@@ -137,7 +137,7 @@ type ClientOpts struct {
 	Middlewares []telegram.Middleware
 	// Custom Run() Middleware
 	// Can be used for floodWaiter package
-	// https://github.com/celestix/gotgproto/blob/beta/examples/middleware/main.go#L41
+	// https://github.com/amupxm/gotgproto/blob/beta/examples/middleware/main.go#L41
 	RunMiddleware func(
 		origRun func(ctx context.Context, f func(ctx context.Context) error) (err error),
 		ctx context.Context,

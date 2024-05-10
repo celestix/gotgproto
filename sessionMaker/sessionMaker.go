@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/celestix/gotgproto/storage"
+	"github.com/amupxm/gotgproto/storage"
 	"github.com/glebarez/sqlite"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"

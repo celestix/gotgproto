@@ -9,16 +9,16 @@ import (
 	"log"
 	"time"
 
+	"github.com/amupxm/gotgproto/dispatcher/handlers"
+	"github.com/amupxm/gotgproto/dispatcher/handlers/filters"
+	"github.com/amupxm/gotgproto/ext"
+	"github.com/amupxm/gotgproto/sessionMaker"
 	"github.com/celestix/gotgproto"
-	"github.com/celestix/gotgproto/dispatcher/handlers"
-	"github.com/celestix/gotgproto/dispatcher/handlers/filters"
-	"github.com/celestix/gotgproto/ext"
-	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/gotd/contrib/middleware/floodwait"
 )
 
 func main() {
-	// Type of client to login to, same as in https://github.com/celestix/gotgproto/blob/beta/examples/echo-bot/memory_session/main.go#L17
+	// Type of client to login to, same as in https://github.com/amupxm/gotgproto/blob/beta/examples/echo-bot/memory_session/main.go#L17
 	clientType := gotgproto.ClientType{
 		BotToken: "BOT_TOKEN_HERE",
 	}

@@ -1,4 +1,4 @@
-module github.com/celestix/gotgproto/examples/middleware
+module github.com/amupxm/gotgproto/examples/middleware
 
 go 1.21.4
 

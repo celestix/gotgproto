@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/amupxm/gotgproto/sessionMaker"
 	"github.com/celestix/gotgproto"
-	"github.com/celestix/gotgproto/sessionMaker"
 	"github.com/gotd/td/session/tdesktop"
 )
 
