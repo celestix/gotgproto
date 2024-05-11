@@ -75,7 +75,7 @@ func CreateChat(context context.Context, client *tg.Client, p *storage.PeerStora
 		return nil, err
 	}
 	// Highly experimental value from ChatClass map
-	_, chats, _ := getUpdateFromUpdates(udps, p)
+	_, chats, _ := getUpdateFromUpdates(udps.Updates, p)
 	return chats[0].(*tg.Chat), nil
 }
 
