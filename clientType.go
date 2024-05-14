@@ -28,7 +28,7 @@ func ClientTypePhone(phoneNumber string) clientType {
 type clientTypeBot string
 
 func (v *clientTypeBot) getType() int {
-	return clientTypeVPhone
+	return clientTypeVBot
 }
 
 func (v clientTypeBot) getValue() string {

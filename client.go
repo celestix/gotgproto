@@ -278,10 +278,10 @@ func (c *Client) login() error {
 	if status.Authorized {
 		return nil
 	}
-	if c.NoAutoAuth {
-		return intErrors.ErrSessionUnauthorized
-	}
 	if c.clientType.getType() == clientTypeVPhone {
+		if c.NoAutoAuth {
+			return intErrors.ErrSessionUnauthorized
+		}
 		err = authFlow(
 			c.ctx, authClient,
 			c.authConversator,
