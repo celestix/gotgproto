@@ -68,7 +68,7 @@ func download(ctx *ext.Context, update *ext.Update) error {
 	}
 
 	msg := fmt.Sprintf(`File "%s" downloaded`, filename)
-	_, err = ctx.Reply(update, msg, nil)
+	_, err = ctx.Reply(update, ext.ReplyTextString(msg), nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to reply")
 	}

@@ -51,7 +51,7 @@ func main() {
 // callback function for /start command
 func start(ctx *ext.Context, update *ext.Update) error {
 	user := update.EffectiveUser()
-	_, _ = ctx.Reply(update, fmt.Sprintf("Hello %s, I am @%s and will repeat all your messages.\nI was made using gotd and gotgproto.", user.FirstName, ctx.Self.Username), &ext.ReplyOpts{
+	_, _ = ctx.Reply(update, ext.ReplyTextString(fmt.Sprintf("Hello %s, I am @%s and will repeat all your messages.\nI was made using gotd and gotgproto.", user.FirstName, ctx.Self.Username)), &ext.ReplyOpts{
 		Markup: &tg.ReplyInlineMarkup{
 			Rows: []tg.KeyboardButtonRow{
 				{
@@ -93,6 +93,6 @@ func buttonCallback(ctx *ext.Context, update *ext.Update) error {
 
 func echo(ctx *ext.Context, update *ext.Update) error {
 	msg := update.EffectiveMessage
-	_, err := ctx.Reply(update, msg.Text, nil)
+	_, err := ctx.Reply(update, ext.ReplyTextString(msg.Text), nil)
 	return err
 }

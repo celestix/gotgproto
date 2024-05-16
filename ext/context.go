@@ -65,9 +65,52 @@ type ReplyOpts struct {
 	ReplyToMessageId int
 }
 
+type ReplyTextType interface {
+	construct()
+}
+
+type ReplyTextTypeString string
+
+func (*ReplyTextTypeString) construct() {}
+
+func (r ReplyTextTypeString) get() string {
+	return string(r)
+}
+
+func ReplyTextString(s string) ReplyTextType {
+	r := ReplyTextTypeString(s)
+	return &r
+}
+
+type ReplyTextTypeStyledText styling.StyledTextOption
+
+func (*ReplyTextTypeStyledText) construct() {}
+
+func (r ReplyTextTypeStyledText) get() styling.StyledTextOption {
+	return styling.StyledTextOption(r)
+}
+
+func ReplyTextStyledText(s styling.StyledTextOption) ReplyTextType {
+	r := ReplyTextTypeStyledText(s)
+	return &r
+}
+
+type ReplyTextTypeStyledTextArray []styling.StyledTextOption
+
+func (*ReplyTextTypeStyledTextArray) construct() {}
+
+func (r ReplyTextTypeStyledTextArray) get() []styling.StyledTextOption {
+	return []styling.StyledTextOption(r)
+}
+
+func ReplyTextStyledTextArray(s []styling.StyledTextOption) ReplyTextType {
+	r := ReplyTextTypeStyledTextArray(s)
+	return &r
+}
+
 // Reply uses given message update to create message for same chat and create a reply.
 // Parameter 'text' interface should be one from string or an array of styling.StyledTextOption.
-func (ctx *Context) Reply(upd *Update, text interface{}, opts *ReplyOpts) (*types.Message, error) {
+func (ctx *Context) Reply(upd *Update, text ReplyTextType, opts *ReplyOpts) (*types.Message, error) {
 	if text == nil {
 		return nil, mtp_errors.ErrTextEmpty
 	}
@@ -86,31 +129,31 @@ func (ctx *Context) Reply(upd *Update, text interface{}, opts *ReplyOpts) (*type
 	}
 	var m = &tg.Message{}
 	switch text := (text).(type) {
-	case string:
-		m.Message = text
-		u, err := builder.Text(ctx, text)
+	case *ReplyTextTypeString:
+		m.Message = text.get()
+		u, err := builder.Text(ctx, text.get())
 		m, err = functions.ReturnNewMessageWithError(m, u, ctx.PeerStorage, err)
 		if err != nil {
 			return nil, err
 		}
-	case styling.StyledTextOption:
+	case *ReplyTextTypeStyledText:
 		tb := entity.Builder{}
-		if err := styling.Perform(&tb, text); err != nil {
+		if err := styling.Perform(&tb, text.get()); err != nil {
 			return nil, err
 		}
 		m.Message, _ = tb.Complete()
-		u, err := builder.StyledText(ctx, text)
+		u, err := builder.StyledText(ctx, text.get())
 		m, err = functions.ReturnNewMessageWithError(m, u, ctx.PeerStorage, err)
 		if err != nil {
 			return nil, err
 		}
-	case []styling.StyledTextOption:
+	case *ReplyTextTypeStyledTextArray:
 		tb := entity.Builder{}
-		if err := styling.Perform(&tb, text...); err != nil {
+		if err := styling.Perform(&tb, text.get()...); err != nil {
 			return nil, err
 		}
 		m.Message, _ = tb.Complete()
-		u, err := builder.StyledText(ctx, text...)
+		u, err := builder.StyledText(ctx, text.get()...)
 		m, err = functions.ReturnNewMessageWithError(m, u, ctx.PeerStorage, err)
 		if err != nil {
 			return nil, err
