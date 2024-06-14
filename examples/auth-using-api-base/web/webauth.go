@@ -14,7 +14,11 @@ type webAuth struct {
 }
 
 func GetWebAuth() *webAuth {
-	return &webAuth{}
+	return &webAuth{
+		phoneChan:  make(chan string),
+		codeChan:   make(chan string),
+		passwdChan: make(chan string),
+	}
 }
 
 func (w *webAuth) AskPhoneNumber() (string, error) {
