@@ -37,7 +37,7 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 			client:      client,
 			conversator: conversator,
 		},
-		auth.SendCodeOptions{},
+		sendOpts,
 	))
 	if f.Auth == nil {
 		return errors.New("no UserAuthenticator provided")
