@@ -34,7 +34,7 @@ type Update struct {
 }
 
 // GetNewUpdate creates a new Update with provided parameters.
-func GetNewUpdate(ctx context.Context, client *tg.Client, p *storage.PeerStorage, e *tg.Entities, update tg.UpdateClass) *Update {
+func GetNewUpdate(ctx context.Context, client *tg.Client, selfUserId int64, p *storage.PeerStorage, e *tg.Entities, update tg.UpdateClass) *Update {
 	u := &Update{
 		UpdateClass: update,
 		Entities:    e,
@@ -70,11 +70,11 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, p *storage.PeerStorage
 				}
 			}
 		}
-		u.fillUserIdFromMessage(m)
+		u.fillUserIdFromMessage(selfUserId)
 	case message.AnswerableMessageUpdate:
 		m := update.GetMessage()
 		u.EffectiveMessage = types.ConstructMessage(m)
-		u.fillUserIdFromMessage(m)
+		u.fillUserIdFromMessage(selfUserId)
 	case *tg.UpdateBotCallbackQuery:
 		u.CallbackQuery = update
 		u.userId = update.UserID
@@ -216,9 +216,12 @@ func (u *Update) EffectiveChat() types.EffectiveChat {
 	return &types.EmptyUC{}
 }
 
-func (u *Update) fillUserIdFromMessage(m tg.MessageClass) {
+func (u *Update) fillUserIdFromMessage(selfUserId int64) {
 	if u.Entities != nil && u.Entities.Users != nil {
 		for uId := range u.Entities.Users {
+			if uId == selfUserId {
+				continue
+			}
 			u.userId = uId
 			break
 		}
