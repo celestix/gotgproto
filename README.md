@@ -85,6 +85,8 @@ ctx.SendMedia(chatId, &tg.MessagesSendMediaRequest{
 		Message: "This is your caption",
 		Media: &tg.InputMediaUploadedPhoto{
 			File: f,
+			MimeType: "video/mp4", // You can specify the mime type of the file here like "image/jpeg",  "audio/mpeg" etc.
+			Attributes: []tg.DocumentAttributeClass{&tg.DocumentAttributeFilename{FileName: f.GetName()}}
 		},
 })
 ```
