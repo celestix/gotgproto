@@ -91,6 +91,21 @@ ctx.SendMedia(chatId, &tg.MessagesSendMediaRequest{
 
 _For media types other than photos, use `tg.InputMediaUploadedDocument`._
 
+#### Sending an audio 
+```go
+media := &tg.InputMediaUploadedDocument{
+    File:       f,
+    MimeType:   "audio/mp4", // or any other mime type like "video/mp4" for videos, "audio/mp4" for audios etc.
+    Thumb:      f, // Optional, you can set it to nil if you don't want to set a thumbnail.
+    Attributes: []tg.DocumentAttributeClass{&tg.DocumentAttributeFilename{FileName: f.GetName()}},
+}
+
+ctx.SendMedia(chatID, &tg.MessagesSendMediaRequest{
+		Media:   media,
+		Message: "This is your caption"
+})
+```
+
 ### Retrieving a photo from a message and sending it
 If you want to send a photo from a message, you can do it like this:
 ```go
