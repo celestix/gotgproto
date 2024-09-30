@@ -622,6 +622,16 @@ func (ctx *Context) ForwardMessages(fromChatId, toChatId int64, request *tg.Mess
 		ID:       request.ID,
 		FromPeer: fromPeer,
 		ToPeer:   toPeer,
+		DropAuthor: request.DropAuthor,
+		Silent:     request.Silent,
+		Background: request.Background,
+		WithMyScore: request.WithMyScore,
+		DropMediaCaptions: request.DropMediaCaptions,
+		Noforwards: request.Noforwards,
+		TopMsgID: request.TopMsgID,
+		ScheduleDate: request.ScheduleDate,
+		SendAs: request.SendAs,
+		QuickReplyShortcut: request.QuickReplyShortcut,
 	})
 }
 
