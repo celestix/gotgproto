@@ -43,6 +43,7 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, selfUserId int64, p *s
 	case *tg.UpdateNewMessage:
 		m := update.GetMessage()
 		u.EffectiveMessage = types.ConstructMessage(m)
+		u.fillUserIdFromMessage(selfUserId)
 		diff, err := client.UpdatesGetDifference(ctx, &tg.UpdatesGetDifferenceRequest{
 			Pts:  update.Pts - 1,
 			Date: int(time.Now().Unix()),
@@ -70,7 +71,6 @@ func GetNewUpdate(ctx context.Context, client *tg.Client, selfUserId int64, p *s
 				}
 			}
 		}
-		u.fillUserIdFromMessage(selfUserId)
 	case message.AnswerableMessageUpdate:
 		m := update.GetMessage()
 		u.EffectiveMessage = types.ConstructMessage(m)
