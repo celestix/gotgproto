@@ -133,6 +133,7 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 				SendAuthStatus(conversator, AuthStatusPasswordFailed)
 				return errors.Wrap(err, "sign in with password")
 			}
+			SendAuthStatus(conversator, AuthStatusSuccess)
 			return nil
 		}
 		var signUpRequired *auth.SignUpRequired
