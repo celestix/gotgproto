@@ -15,7 +15,6 @@ import (
 	"github.com/gotd/td/telegram/dcs"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/celestix/gotgproto/dispatcher"
@@ -292,7 +291,7 @@ func (c *Client) Login(conversator ...AuthConversator) error {
 
 	status, err := authClient.Status(c.ctx)
 	if err != nil {
-		return errors.Wrap(err, "auth status")
+		return fmt.Errorf("auth status: %w", err)
 	}
 
 	if status.Authorized {
@@ -318,12 +317,12 @@ func (c *Client) Login(conversator ...AuthConversator) error {
 			phoneNr,
 			auth.SendCodeOptions{},
 		).Execute(c.ctx); err != nil {
-			return errors.Wrap(err, "auth flow")
+			return fmt.Errorf("auth flow: %w", err)
 		}
 	case clientTypeVBot:
 		if !status.Authorized {
 			if _, err := c.Auth().Bot(c.ctx, c.clientType.getValue()); err != nil {
-				return errors.Wrap(err, "login")
+				return fmt.Errorf("bot auth: %w", err)
 			}
 		}
 	default:

@@ -3,6 +3,7 @@ package gotgproto
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
@@ -20,6 +21,7 @@ type authFlow struct {
 	conversator AuthConversator
 	flow        auth.Flow
 	phone       string
+	timeout     time.Time
 }
 
 // newAuthFlow creates a new authentication flow instance
@@ -47,6 +49,7 @@ func (f *authFlow) Execute(ctx context.Context) error {
 
 	sentCode, err := f.sendVerificationCode(ctx)
 	if err != nil {
+		fmt.Println("sendVerificationCode erR", err)
 		return err
 	}
 
@@ -57,16 +60,30 @@ func (f *authFlow) Execute(ctx context.Context) error {
 func (f *authFlow) sendVerificationCode(ctx context.Context) (tg.AuthSentCodeClass, error) {
 	SendAuthStatus(f.conversator, AuthStatusPhoneAsked)
 
-	var sentCode tg.AuthSentCodeClass
-	var err error
+	var (
+		sentCode tg.AuthSentCodeClass
+		phone    string
+		err      error
+	)
 
 	for i := 0; i < maxRetries; i++ {
-		phone, err := f.getPhoneNumber(ctx, i)
+		if !f.timeout.IsZero() && time.Now().Before(f.timeout) {
+			time.Sleep(time.Until(f.timeout) + time.Second)
+		}
+
+		phone, err = f.getPhoneNumber(ctx, i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("get phone number: %w", err)
 		}
 
 		sentCode, err = f.client.SendCode(ctx, phone, f.flow.Options)
+
+		if timeout, ok := tgerr.AsFloodWait(err); ok {
+			f.timeout = time.Now().Add(timeout)
+			SendAuthStatusFloodWait(f.conversator, f.timeout)
+			continue
+		}
+
 		if !tgerr.Is(err, "PHONE_NUMBER_INVALID") {
 			break
 		}
@@ -74,7 +91,7 @@ func (f *authFlow) sendVerificationCode(ctx context.Context) (tg.AuthSentCodeCla
 
 	if err != nil {
 		SendAuthStatus(f.conversator, AuthStatusPhoneFailed)
-		return nil, err
+		return nil, fmt.Errorf("send code: %w", err)
 	}
 
 	return sentCode, nil
@@ -196,6 +213,10 @@ func (f *authFlow) handleSignUp(ctx context.Context, phone, hash string, s *auth
 
 // handleSentCode processes the response from sending verification code
 func (f *authFlow) handleSentCode(ctx context.Context, sentCode tg.AuthSentCodeClass) error {
+	if sentCode == nil {
+		return errors.New("sentCode is nil, something went wrong")
+	}
+
 	switch s := sentCode.(type) {
 	case *tg.AuthSentCode:
 		return f.handleSignIn(ctx, f.phone, s.PhoneCodeHash)
