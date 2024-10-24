@@ -9,20 +9,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/celestix/gotgproto/dispatcher"
-	intErrors "github.com/celestix/gotgproto/errors"
-	"github.com/celestix/gotgproto/ext"
-	"github.com/celestix/gotgproto/functions"
-	"github.com/celestix/gotgproto/sessionMaker"
-	"github.com/celestix/gotgproto/storage"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/telegram/dcs"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/tg"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
+
+	"github.com/celestix/gotgproto/dispatcher"
+	intErrors "github.com/celestix/gotgproto/errors"
+	"github.com/celestix/gotgproto/ext"
+	"github.com/celestix/gotgproto/functions"
+	"github.com/celestix/gotgproto/sessionMaker"
+	"github.com/celestix/gotgproto/storage"
 )
 
 const VERSION = "v1.0.0-beta18"
@@ -80,6 +80,7 @@ type Client struct {
 	// if the current session is invalid.
 	NoAutoAuth bool
 
+	*telegram.Client
 	authConversator AuthConversator
 	clientType      clientType
 	ctx             context.Context
@@ -87,9 +88,9 @@ type Client struct {
 	autoFetchReply  bool
 	cancel          context.CancelFunc
 	running         bool
-	*telegram.Client
-	appId   int
-	apiHash string
+	appId           int
+	apiHash         string
+	opts            *ClientOpts
 }
 
 type ClientOpts struct {
@@ -115,6 +116,8 @@ type ClientOpts struct {
 	DisableCopyright bool
 	// Session info of the authenticated user, use sessionMaker.NewSession function to fill this field.
 	Session sessionMaker.SessionConstructor
+	// StorageConfig is the configuration for the storage.
+	StorageConfig *storage.StorageConfig
 	// Setting this field to true will lead to automatically fetch the reply_to_message for a new message update.
 	//
 	// Set to `false` by default.
@@ -172,15 +175,23 @@ type ClientOpts struct {
 	// NoAutoAuth is a flag to disable automatic authentication
 	// if the current session is invalid.
 	NoAutoAuth bool
+	// NoAutoStart is a flag to disable automatic start of the client.
+	NoAutoStart bool
+}
+
+var DefaultOpts = &ClientOpts{
+	SystemLangCode: "en",
+	ClientLangCode: "en",
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
 func NewClient(appId int, apiHash string, cType clientType, opts *ClientOpts) (*Client, error) {
 	if opts == nil {
-		opts = &ClientOpts{
-			SystemLangCode: "en",
-			ClientLangCode: "en",
-		}
+		opts = DefaultOpts
+	}
+
+	if opts.StorageConfig == nil {
+		opts.StorageConfig = storage.DefaultStorageConfig
 	}
 
 	if opts.Context == nil {
@@ -188,7 +199,7 @@ func NewClient(appId int, apiHash string, cType clientType, opts *ClientOpts) (*
 	}
 	ctx, cancel := context.WithCancel(opts.Context)
 
-	peerStorage, sessionStorage, err := sessionMaker.NewSessionStorage(ctx, opts.Session, opts.InMemory)
+	peerStorage, sessionStorage, err := sessionMaker.NewSessionStorage(ctx, opts.Session, cType.getValue(), opts.StorageConfig)
 	if err != nil {
 		cancel()
 		return nil, err
@@ -228,11 +239,16 @@ func NewClient(appId int, apiHash string, cType clientType, opts *ClientOpts) (*
 		cancel:            cancel,
 		appId:             appId,
 		apiHash:           apiHash,
+		opts:              opts,
 	}
 
 	c.printCredit()
 
-	return &c, c.Start(opts)
+	if opts.NoAutoStart {
+		return &c, nil
+	}
+
+	return &c, c.Start()
 }
 
 func (c *Client) initTelegramClient(
@@ -248,6 +264,7 @@ func (c *Client) initTelegramClient(
 			LangCode:       c.ClientLangCode,
 		}
 	}
+
 	c.Client = telegram.NewClient(c.appId, c.apiHash, telegram.Options{
 		DCList:            c.DCList,
 		Resolver:          c.Resolver,
@@ -269,35 +286,49 @@ func (c *Client) initTelegramClient(
 	})
 }
 
-func (c *Client) login() error {
+func (c *Client) Login(conversator ...AuthConversator) error {
 	authClient := c.Auth()
+
 	status, err := authClient.Status(c.ctx)
 	if err != nil {
-		return errors.Wrap(err, "auth status")
+		return fmt.Errorf("auth status: %w", err)
 	}
+
 	if status.Authorized {
 		return nil
 	}
-	if c.clientType.getType() == clientTypeVPhone {
+
+	_conversator := c.authConversator
+	if len(conversator) > 0 {
+		_conversator = conversator[0]
+	}
+
+	switch c.clientType.getType() {
+	case clientTypeVPhone:
 		if c.NoAutoAuth {
 			return intErrors.ErrSessionUnauthorized
 		}
-		err = authFlow(
-			c.ctx, authClient,
-			c.authConversator,
-			c.clientType.getValue(),
+
+		phoneNr := c.clientType.getValue()
+
+		if err := newAuthFlow(
+			authClient,
+			_conversator,
+			phoneNr,
 			auth.SendCodeOptions{},
-		)
-		if err != nil {
-			return errors.Wrap(err, "auth flow")
+		).Execute(c.ctx); err != nil {
+			return fmt.Errorf("auth flow: %w", err)
 		}
-	} else {
+	case clientTypeVBot:
 		if !status.Authorized {
 			if _, err := c.Auth().Bot(c.ctx, c.clientType.getValue()); err != nil {
-				return errors.Wrap(err, "login")
+				return fmt.Errorf("bot auth: %w", err)
 			}
 		}
+	default:
+		return fmt.Errorf("invalid client type, must be either clientTypeVPhone or clientTypeVBot")
 	}
+
 	return nil
 }
 
@@ -313,24 +344,24 @@ Licensed under the terms of GNU General Public License v3
 
 func (c *Client) initialize(wg *sync.WaitGroup) func(ctx context.Context) error {
 	return func(ctx context.Context) error {
-		err := c.login()
-		if err != nil {
+		if err := c.Login(); err != nil {
 			return err
 		}
+
 		self, err := c.Client.Self(ctx)
 		if err != nil {
 			return err
 		}
 
 		c.Self = self
-
 		c.Dispatcher.Initialize(ctx, c.Stop, c.Client, self)
-
 		c.PeerStorage.AddPeer(self.ID, self.AccessHash, storage.TypeUser, self.Username)
+
 		// notify channel that client is up
 		wg.Done()
 		c.running = true
 		<-c.ctx.Done()
+
 		return c.ctx.Err()
 	}
 }
@@ -348,7 +379,13 @@ func (c *Client) ExportStringSession() (string, error) {
 		}
 		return functions.EncodeSessionToString(loadedSession)
 	}
-	return functions.EncodeSessionToString(c.PeerStorage.GetSession())
+
+	session, err := c.PeerStorage.GetSession(c.clientType.getValue())
+	if err != nil {
+		return "", fmt.Errorf("get session: %w", err)
+	}
+
+	return functions.EncodeSessionToString(session)
 }
 
 // Idle keeps the current goroutined blocked until the client is stopped.
@@ -391,22 +428,37 @@ func (c *Client) Stop() {
 
 // Start connects the client to telegram servers and logins.
 // It will return error if the client is already running.
-func (c *Client) Start(opts *ClientOpts) error {
+func (c *Client) Start(opts ...*ClientOpts) error {
 	if c.running {
 		return intErrors.ErrClientAlreadyRunning
 	}
+
+	if len(opts) > 0 {
+		c.opts = opts[0]
+	}
+
+	if c.opts == nil {
+
+	}
+
+	if c.appId == 0 || len(c.apiHash) == 0 {
+		return intErrors.ErrClientNotInitialized
+	}
+
 	if c.ctx.Err() == context.Canceled {
 		c.ctx, c.cancel = context.WithCancel(context.Background())
 	}
 
-	c.initTelegramClient(opts.Device, opts.Middlewares)
+	c.initTelegramClient(c.opts.Device, c.opts.Middlewares)
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
+
 	go func(c *Client) {
-		if opts.RunMiddleware == nil {
+		if c.opts.RunMiddleware == nil {
 			c.err = c.Run(c.ctx, c.initialize(&wg))
 		} else {
-			c.err = opts.RunMiddleware(
+			c.err = c.opts.RunMiddleware(
 				c.Run,
 				c.ctx,
 				c.initialize(&wg),
@@ -420,6 +472,7 @@ func (c *Client) Start(opts *ClientOpts) error {
 
 	// wait till client starts
 	wg.Wait()
+
 	return c.err
 }
 

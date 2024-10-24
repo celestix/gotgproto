@@ -6,11 +6,13 @@ toolchain go1.23.1
 
 require (
 	github.com/AnimeKaizoku/cacher v1.0.2
+	github.com/caarlos0/env/v11 v11.2.2
 	github.com/go-faster/errors v0.7.1
 	github.com/gotd/td v0.111.2
 	github.com/pkg/errors v0.9.1
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
+	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/gorm v1.25.12
 )
 
