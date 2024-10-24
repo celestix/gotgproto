@@ -23,7 +23,7 @@ type Session struct {
 
 const LatestVersion = 1
 
-// UpdateSession saves or updates the session in storage
+// UpdateSession saves or updates the session in storage>
 func (ps *PeerStorage) UpdateSession(session *Session) error {
 	if session.Phone == "" {
 		return fmt.Errorf("phone number is required")
@@ -33,19 +33,31 @@ func (ps *PeerStorage) UpdateSession(session *Session) error {
 	if err := tx.Error; err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 
 	// Try to find existing session first
 	var existing Session
-
-	if err := tx.Where("phone = ?", session.Phone).First(&existing).Error; err != nil && !IsNotFoundError(err) {
-		tx.Rollback()
-		return fmt.Errorf("check existing session: %w", err)
-	}
-
-	// If session exists, update it, otherwise create new
-	if err := tx.Save(session).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("save session: %w", err)
+	if err := tx.Where("phone = ?", session.Phone).First(&existing).Error; err != nil {
+		if !IsNotFoundError(err) {
+			tx.Rollback()
+			return fmt.Errorf("check existing session: %w", err)
+		}
+		// No existing session found, create new one
+		if err := tx.Create(session).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("create session: %w", err)
+		}
+	} else {
+		// Session exists, update it
+		session.ID = existing.ID // Ensure we keep the same ID
+		if err := tx.Model(&existing).Updates(session).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("update session: %w", err)
+		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
