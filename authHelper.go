@@ -39,6 +39,7 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 		},
 		sendOpts,
 	))
+
 	if f.Auth == nil {
 		return errors.New("no UserAuthenticator provided")
 	}
@@ -47,7 +48,9 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 		sentCode tg.AuthSentCodeClass
 		err      error
 	)
+
 	SendAuthStatus(conversator, AuthStatusPhoneAsked)
+
 	for i := 0; i < 3; i++ {
 		var err1 error
 		if i == 0 {
@@ -65,6 +68,7 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 		}
 		break
 	}
+
 	if err != nil {
 		SendAuthStatus(conversator, AuthStatusPhoneFailed)
 		return err
@@ -79,6 +83,7 @@ func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversa
 	// if err != nil {
 	// 	return err
 	// }
+
 	switch s := sentCode.(type) {
 	case *tg.AuthSentCode:
 		hash := s.PhoneCodeHash
