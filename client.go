@@ -310,13 +310,14 @@ func (c *Client) Login(conversator ...AuthConversator) error {
 			return intErrors.ErrSessionUnauthorized
 		}
 
-		if err = authFlow(
-			c.ctx,
+		phoneNr := c.clientType.getValue()
+
+		if err := newAuthFlow(
 			authClient,
 			_conversator,
-			c.clientType.getValue(),
+			phoneNr,
 			auth.SendCodeOptions{},
-		); err != nil {
+		).Execute(c.ctx); err != nil {
 			return errors.Wrap(err, "auth flow")
 		}
 	case clientTypeVBot:

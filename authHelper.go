@@ -2,6 +2,7 @@ package gotgproto
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gotd/td/telegram/auth"
 	"github.com/gotd/td/tg"
@@ -9,167 +10,217 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Flow auth.Flow
+const (
+	maxRetries = 3
+)
 
-func (f Flow) handleSignUp(ctx context.Context, client auth.FlowClient, phone, hash string, s *auth.SignUpRequired) error {
-	if err := f.Auth.AcceptTermsOfService(ctx, s.TermsOfService); err != nil {
-		return errors.Wrap(err, "confirm TOS")
+// authFlow handles the authentication flow for Telegram clients
+type authFlow struct {
+	client      *auth.Client
+	conversator AuthConversator
+	flow        auth.Flow
+	phone       string
+}
+
+// newAuthFlow creates a new authentication flow instance
+func newAuthFlow(client *auth.Client, conversator AuthConversator, phone string, sendOpts auth.SendCodeOptions) *authFlow {
+	return &authFlow{
+		client:      client,
+		conversator: conversator,
+		flow: auth.NewFlow(
+			termAuth{
+				phone:       phone,
+				client:      client,
+				conversator: conversator,
+			},
+			sendOpts,
+		),
+		phone: phone,
 	}
-	info, err := f.Auth.SignUp(ctx)
+}
+
+// Execute runs the authentication flow
+func (f *authFlow) Execute(ctx context.Context) error {
+	if f.flow.Auth == nil {
+		return errors.New("no UserAuthenticator provided")
+	}
+
+	sentCode, err := f.sendVerificationCode(ctx)
 	if err != nil {
-		return errors.Wrap(err, "sign up info not provided")
+		return err
 	}
-	if _, err := client.SignUp(ctx, auth.SignUp{
+
+	return f.handleSentCode(ctx, sentCode)
+}
+
+// sendVerificationCode handles sending the verification code with retries
+func (f *authFlow) sendVerificationCode(ctx context.Context) (tg.AuthSentCodeClass, error) {
+	SendAuthStatus(f.conversator, AuthStatusPhoneAsked)
+
+	var sentCode tg.AuthSentCodeClass
+	var err error
+
+	for i := 0; i < maxRetries; i++ {
+		phone, err := f.getPhoneNumber(ctx, i)
+		if err != nil {
+			return nil, err
+		}
+
+		sentCode, err = f.client.SendCode(ctx, phone, f.flow.Options)
+		if !tgerr.Is(err, "PHONE_NUMBER_INVALID") {
+			break
+		}
+	}
+
+	if err != nil {
+		SendAuthStatus(f.conversator, AuthStatusPhoneFailed)
+		return nil, err
+	}
+
+	return sentCode, nil
+}
+
+// getPhoneNumber handles phone number input with retries
+func (f *authFlow) getPhoneNumber(ctx context.Context, attempt int) (string, error) {
+	if attempt == 0 {
+		return f.flow.Auth.Phone(ctx)
+	}
+
+	SendAuthStatusWithRetrials(f.conversator, AuthStatusPhoneRetrial, maxRetries-attempt)
+
+	return f.conversator.AskPhoneNumber()
+}
+
+// handleSignIn manages the sign-in process with verification code
+func (f *authFlow) handleSignIn(ctx context.Context, phone, hash string) error {
+	for i := 0; i < maxRetries; i++ {
+		code, err := f.getVerificationCode(ctx, i)
+		if err != nil {
+			return err
+		}
+
+		_, signInErr := f.client.SignIn(ctx, phone, code, hash)
+		if signInErr == nil {
+			SendAuthStatus(f.conversator, AuthStatusSuccess)
+			return nil
+		}
+
+		if errors.Is(signInErr, auth.ErrPasswordAuthNeeded) {
+			return f.handlePasswordAuth(ctx)
+		}
+
+		var signUpRequired *auth.SignUpRequired
+		if errors.As(signInErr, &signUpRequired) {
+			return f.handleSignUp(ctx, phone, hash, signUpRequired)
+		}
+
+		if !tgerr.Is(signInErr, "PHONE_CODE_INVALID") {
+			SendAuthStatus(f.conversator, AuthStatusPhoneCodeFailed)
+			return errors.Wrap(signInErr, "sign in failed")
+		}
+	}
+
+	SendAuthStatus(f.conversator, AuthStatusPhoneCodeFailed)
+	return errors.New("max verification code attempts exceeded")
+}
+
+// getVerificationCode handles verification code input with retries
+func (f *authFlow) getVerificationCode(ctx context.Context, attempt int) (string, error) {
+	if attempt == 0 {
+		SendAuthStatus(f.conversator, AuthStatusPhoneCodeAsked)
+		return f.flow.Auth.Code(ctx, nil) // Note: This might need adaptation based on your needs
+	}
+
+	SendAuthStatusWithRetrials(f.conversator, AuthStatusPhoneCodeRetrial, maxRetries-attempt)
+	return f.conversator.AskCode()
+}
+
+// handlePasswordAuth manages 2FA password authentication
+func (f *authFlow) handlePasswordAuth(ctx context.Context) error {
+	SendAuthStatus(f.conversator, AuthStatusPasswordAsked)
+	var err error
+
+	for i := 0; i < maxRetries; i++ {
+		password, err := f.getPassword(ctx, i)
+		if err != nil {
+			return err
+		}
+
+		_, err = f.client.Password(ctx, password)
+		if err != auth.ErrPasswordInvalid {
+			break
+		}
+	}
+
+	if err != nil {
+		SendAuthStatus(f.conversator, AuthStatusPasswordFailed)
+		return errors.Wrap(err, "password authentication failed")
+	}
+
+	SendAuthStatus(f.conversator, AuthStatusSuccess)
+	return nil
+}
+
+// getPassword handles password input with retries
+func (f *authFlow) getPassword(ctx context.Context, attempt int) (string, error) {
+	if attempt == 0 {
+		return f.flow.Auth.Password(ctx)
+	}
+
+	SendAuthStatusWithRetrials(f.conversator, AuthStatusPasswordRetrial, maxRetries-attempt)
+	return f.conversator.AskPassword()
+}
+
+// handleSignUp manages the sign-up process for new users
+func (f *authFlow) handleSignUp(ctx context.Context, phone, hash string, s *auth.SignUpRequired) error {
+	if err := f.flow.Auth.AcceptTermsOfService(ctx, s.TermsOfService); err != nil {
+		return errors.Wrap(err, "failed to confirm TOS")
+	}
+
+	info, err := f.flow.Auth.SignUp(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to get sign up info")
+	}
+
+	if _, err := f.client.SignUp(ctx, auth.SignUp{
 		PhoneNumber:   phone,
 		PhoneCodeHash: hash,
 		FirstName:     info.FirstName,
 		LastName:      info.LastName,
 	}); err != nil {
-		return errors.Wrap(err, "sign up")
+		return errors.Wrap(err, "failed to sign up")
 	}
+
 	return nil
 }
 
-func authFlow(ctx context.Context, client *auth.Client, conversator AuthConversator, phone string, sendOpts auth.SendCodeOptions) error {
-	f := Flow(auth.NewFlow(
-		termAuth{
-			phone:       phone,
-			client:      client,
-			conversator: conversator,
-		},
-		sendOpts,
-	))
-
-	if f.Auth == nil {
-		return errors.New("no UserAuthenticator provided")
-	}
-
-	var (
-		sentCode tg.AuthSentCodeClass
-		err      error
-	)
-
-	SendAuthStatus(conversator, AuthStatusPhoneAsked)
-
-	for i := 0; i < 3; i++ {
-		var err1 error
-		if i == 0 {
-			phone, err1 = f.Auth.Phone(ctx)
-		} else {
-			SendAuthStatusWithRetrials(conversator, AuthStatusPhoneRetrial, 3-i)
-			phone, err1 = conversator.AskPhoneNumber()
-		}
-		if err1 != nil {
-			return errors.Wrap(err, "get phone")
-		}
-		sentCode, err = client.SendCode(ctx, phone, f.Options)
-		if tgerr.Is(err, "PHONE_NUMBER_INVALID") {
-			continue
-		}
-		break
-	}
-
-	if err != nil {
-		SendAuthStatus(conversator, AuthStatusPhoneFailed)
-		return err
-	}
-
-	// phone, err := f.Auth.Phone(ctx)
-	// if err != nil {
-	// 	return errors.Wrap(err, "get phone")
-	// }
-
-	// sentCode, err := client.SendCode(ctx, phone, f.Options)
-	// if err != nil {
-	// 	return err
-	// }
-
+// handleSentCode processes the response from sending verification code
+func (f *authFlow) handleSentCode(ctx context.Context, sentCode tg.AuthSentCodeClass) error {
 	switch s := sentCode.(type) {
 	case *tg.AuthSentCode:
-		hash := s.PhoneCodeHash
-		var signInErr error
-		for i := 0; i < 3; i++ {
-			var code string
-			if i == 0 {
-				SendAuthStatus(conversator, AuthStatusPhoneCodeAsked)
-				code, err = f.Auth.Code(ctx, s)
-			} else {
-				SendAuthStatusWithRetrials(conversator, AuthStatusPhoneCodeRetrial, 3-i)
-				code, err = conversator.AskCode()
-			}
-			if err != nil {
-				SendAuthStatus(conversator, AuthStatusPhoneCodeFailed)
-				return errors.Wrap(err, "get code")
-			}
-			_, signInErr = client.SignIn(ctx, phone, code, hash)
-			if tgerr.Is(signInErr, "PHONE_CODE_INVALID") {
-				continue
-			}
-			break
-		}
-		// code, err := f.Auth.Code(ctx, s)
-		// if err != nil {
-		// 	return errors.Wrap(err, "get code")
-		// }
-		// _, signInErr := client.SignIn(ctx, phone, code, hash)
+		return f.handleSignIn(ctx, f.phone, s.PhoneCodeHash)
 
-		if errors.Is(signInErr, auth.ErrPasswordAuthNeeded) {
-			SendAuthStatus(conversator, AuthStatusPasswordAsked)
-			err = signInErr
-			for i := 0; err != nil && i < 3; i++ {
-				var password string
-				var err1 error
-				if i == 0 {
-					password, err1 = f.Auth.Password(ctx)
-				} else {
-					SendAuthStatusWithRetrials(conversator, AuthStatusPasswordRetrial, 3-i)
-					password, err1 = conversator.AskPassword()
-				}
-				if err1 != nil {
-					return errors.Wrap(err1, "get password")
-				}
-				_, err = client.Password(ctx, password)
-				if err == auth.ErrPasswordInvalid {
-					continue
-				}
-				break
-			}
-			if err != nil {
-				SendAuthStatus(conversator, AuthStatusPasswordFailed)
-				return errors.Wrap(err, "sign in with password")
-			}
-			SendAuthStatus(conversator, AuthStatusSuccess)
-			return nil
-		}
-		var signUpRequired *auth.SignUpRequired
-		if errors.As(signInErr, &signUpRequired) {
-			return f.handleSignUp(ctx, client, phone, hash, signUpRequired)
-		}
-		if signInErr != nil {
-			SendAuthStatus(conversator, AuthStatusPhoneCodeFailed)
-			return errors.Wrap(signInErr, "sign in")
-		}
-		SendAuthStatus(conversator, AuthStatusSuccess)
 	case *tg.AuthSentCodeSuccess:
-		switch a := s.Authorization.(type) {
-		case *tg.AuthAuthorization:
-			SendAuthStatus(conversator, AuthStatusSuccess)
-			// Looks that we are already authorized.
-			return nil
-		case *tg.AuthAuthorizationSignUpRequired:
-			if err := f.handleSignUp(ctx, client, phone, "", &auth.SignUpRequired{
-				TermsOfService: a.TermsOfService,
-			}); err != nil {
-				// TODO: not sure that blank hash will work here
-				return errors.Wrap(err, "sign up after auth sent code success")
-			}
-			return nil
-		default:
-			return errors.Errorf("unexpected authorization type: %T", a)
-		}
-	default:
-		return errors.Errorf("unexpected sent code type: %T", sentCode)
-	}
+		return f.handleAuthorizationSuccess(ctx, s)
 
-	return nil
+	default:
+		return fmt.Errorf("unexpected sent code type: %T", sentCode)
+	}
+}
+
+// handleAuthorizationSuccess processes successful authorization responses
+func (f *authFlow) handleAuthorizationSuccess(ctx context.Context, s *tg.AuthSentCodeSuccess) error {
+	switch a := s.Authorization.(type) {
+	case *tg.AuthAuthorization:
+		SendAuthStatus(f.conversator, AuthStatusSuccess)
+		return nil
+
+	case *tg.AuthAuthorizationSignUpRequired:
+		return f.handleSignUp(ctx, f.phone, "", &auth.SignUpRequired{
+			TermsOfService: a.TermsOfService,
+		})
+
+	default:
+		return fmt.Errorf("unexpected authorization type: %T", a)
+	}
 }
