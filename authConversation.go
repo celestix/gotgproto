@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
 )
 
 type (
@@ -11,6 +12,7 @@ type (
 	AuthStatus      struct {
 		Event        AuthStatusEvent
 		AttemptsLeft int
+		Timeout      time.Time
 	}
 )
 
@@ -27,6 +29,13 @@ func SendAuthStatusWithRetrials(conversator AuthConversator, event AuthStatusEve
 	})
 }
 
+func SendAuthStatusFloodWait(conversator AuthConversator, timeout time.Time) {
+	conversator.AuthStatus(AuthStatus{
+		Event:   AuthStatusFloodWait,
+		Timeout: timeout,
+	})
+}
+
 var (
 	AuthStatusPhoneAsked        = AuthStatusEvent("phone number asked")
 	AuthStatusPhoneRetrial      = AuthStatusEvent("phone number validation retrial")
@@ -39,6 +48,7 @@ var (
 	AuthStatusPasswordRetrial   = AuthStatusEvent("2fa password verification retrial")
 	AuthStatusPasswordFailed    = AuthStatusEvent("2fa password verification failed")
 	AuthStatusSuccess           = AuthStatusEvent("authentification success")
+	AuthStatusFloodWait         = AuthStatusEvent("flood wait, too many attempts")
 )
 
 // AuthConversator is an interface for asking user for auth information.

@@ -4,38 +4,78 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/celestix/gotgproto/storage"
 	"github.com/glebarez/sqlite"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
+
+	"github.com/celestix/gotgproto/storage"
 )
 
-func NewSessionStorage(ctx context.Context, sessionType SessionConstructor, inMemory bool) (*storage.PeerStorage, telegram.SessionStorage, error) {
+// NewSessionStorage creates a new session storage based on the provided configuration
+func NewSessionStorage(
+	ctx context.Context,
+	sessionType SessionConstructor,
+	phone string,
+	cfg *storage.StorageConfig,
+) (*storage.PeerStorage, telegram.SessionStorage, error) {
 	name, data, err := sessionType.loadSession()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failed to load session: %w", err)
 	}
+
+	var peerStorage *storage.PeerStorage
+
+	// Handle custom dialector case
 	if sessDialect, ok := name.(*sessionNameDialector); ok {
-		peerStorage := storage.NewPeerStorage(sessDialect.dialector, false)
-		return peerStorage, &SessionStorage{
-			data:        peerStorage.GetSession().Data,
-			peerStorage: peerStorage,
-		}, nil
-	}
-	if name.(sessionNameString) == "" {
-		name = sessionNameString("gotgproto")
-	}
-	peerStorage := storage.NewPeerStorage(sqlite.Open(fmt.Sprintf("%s.session", name)), inMemory)
-	if inMemory {
-		s := session.StorageMemory{}
-		err := s.StoreSession(ctx, data)
+		peerStorage, err = storage.NewPeerStorage(
+			ctx,
+			cfg,
+			sessDialect.dialector,
+		)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to create peer storage with custom dialector: %w", err)
 		}
-		return peerStorage, &s, nil
+
+		return peerStorage, newSessionStorage(phone, peerStorage), nil
 	}
-	return peerStorage, &SessionStorage{
-		data:        data,
-		peerStorage: peerStorage,
-	}, nil
+
+	// Handle string-based session name
+	sessionName := name.(sessionNameString)
+	if sessionName == "" {
+		sessionName = "gotgproto"
+	}
+
+	// Create SQLite-based storage
+	dialector := sqlite.Open(fmt.Sprintf("%s.session", sessionName))
+
+	if cfg.Cache.InMemoryOnly {
+		// In-memory storage configuration
+		peerStorage, err = storage.NewPeerStorage(
+			ctx,
+			cfg,
+			dialector,
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create in-memory peer storage: %w", err)
+		}
+
+		memStorage := &session.StorageMemory{}
+		if err := memStorage.StoreSession(ctx, data); err != nil {
+			return nil, nil, fmt.Errorf("failed to store session in memory: %w", err)
+		}
+
+		return peerStorage, memStorage, nil
+	}
+
+	// Persistent storage configuration
+	peerStorage, err = storage.NewPeerStorage(
+		ctx,
+		cfg,
+		dialector,
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create persistent peer storage: %w", err)
+	}
+
+	return peerStorage, newSessionStorage(phone, peerStorage), nil
 }

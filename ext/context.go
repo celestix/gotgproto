@@ -9,15 +9,16 @@ import (
 	"strings"
 	"time"
 
-	mtp_errors "github.com/celestix/gotgproto/errors"
-	"github.com/celestix/gotgproto/functions"
-	"github.com/celestix/gotgproto/storage"
-	"github.com/celestix/gotgproto/types"
 	"github.com/gotd/td/telegram/downloader"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
+
+	mtp_errors "github.com/celestix/gotgproto/errors"
+	"github.com/celestix/gotgproto/functions"
+	"github.com/celestix/gotgproto/storage"
+	"github.com/celestix/gotgproto/types"
 )
 
 // Context consists of context.Context, tg.Client, Self etc.
@@ -740,7 +741,12 @@ func (ctx *Context) GetUserProfilePhotos(userId int64, opts *tg.PhotosGetUserPho
 // Note: This session string can be used to log back in with the help of gotgproto.
 // Check sessionMaker.SessionType for more information about it.
 func (ctx *Context) ExportSessionString() (string, error) {
-	return functions.EncodeSessionToString(ctx.PeerStorage.GetSession())
+	session, err := ctx.PeerStorage.GetSession(ctx.Self.Phone)
+	if err != nil {
+		return "", fmt.Errorf("get session: %w", err)
+	}
+
+	return functions.EncodeSessionToString(session)
 }
 
 // DownloadOutputClass is an interface which is used to download media.
