@@ -155,8 +155,6 @@ func (f *authFlow) getVerificationCode(ctx context.Context, attempt int) (string
 // handlePasswordAuth manages 2FA password authentication
 func (f *authFlow) handlePasswordAuth(ctx context.Context) error {
 	SendAuthStatus(f.conversator, AuthStatusPasswordAsked)
-	var err error
-
 	for i := 0; i < maxRetries; i++ {
 		password, err := f.getPassword(ctx, i)
 		if err != nil {
@@ -165,15 +163,10 @@ func (f *authFlow) handlePasswordAuth(ctx context.Context) error {
 
 		_, err = f.client.Password(ctx, password)
 		if err != auth.ErrPasswordInvalid {
-			break
+			SendAuthStatus(f.conversator, AuthStatusPasswordFailed)
+			return errors.Wrap(err, "password authentication failed")
 		}
 	}
-
-	if err != nil {
-		SendAuthStatus(f.conversator, AuthStatusPasswordFailed)
-		return errors.Wrap(err, "password authentication failed")
-	}
-
 	SendAuthStatus(f.conversator, AuthStatusSuccess)
 	return nil
 }
