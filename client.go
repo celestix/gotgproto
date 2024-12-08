@@ -25,7 +25,7 @@ import (
 	"github.com/celestix/gotgproto/storage"
 )
 
-const VERSION = "v1.0.0-beta18"
+const VERSION = "v1.0.0-beta19"
 
 type Client struct {
 	// Dispatcher handlers the incoming updates and execute mapped handlers. It is recommended to use dispatcher.MakeDispatcher function for this field.
