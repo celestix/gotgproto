@@ -19,14 +19,14 @@ func decodeGramjsSession(sessionStr string) (*session.Data, error) {
 	data := struct {
 		Version       string
 		DCID          uint8
-		ServerAddress string // 服务器地址字段应为字符串类型
+		ServerAddress string
 		Port          int16
 		Key           []byte
 		AuthKey       string
 		KeyId         string
 	}{}
 
-	if len(sessionStr) == 0 || sessionStr[0] != '1' { // 假设 CURRENT_VERSION 是 "1"
+	if len(sessionStr) == 0 || sessionStr[0] != '1' {
 		return nil, errors.New("invalid session string")
 	}
 	strsession := sessionStr[1:]
@@ -37,7 +37,7 @@ func decodeGramjsSession(sessionStr string) (*session.Data, error) {
 
 	reader := bytes.NewReader(decodedBytes)
 
-	data.Version = "1" // 固定版本号
+	data.Version = "1"
 
 	err = binary.Read(reader, binary.BigEndian, &data.DCID)
 	if err != nil {
@@ -56,7 +56,7 @@ func decodeGramjsSession(sessionStr string) (*session.Data, error) {
 	if err != nil {
 		return nil, err
 	}
-	data.ServerAddress = string(bytes.TrimRight(addressBuffer, "\x00")) // 将字节切片转换为字符串并移除可能存在的空字符
+	data.ServerAddress = string(bytes.TrimRight(addressBuffer, "\x00"))
 
 	portBuffer := make([]byte, 2)
 	_, err = reader.Read(portBuffer)
