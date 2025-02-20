@@ -157,3 +157,28 @@ func (s *TdataSessionConstructor) loadSession() (sessionName, []byte, error) {
 	})
 	return sessionNameString(s.name), data, err
 }
+
+type GramjsSessionConstructor struct {
+	name, value string
+}
+
+func GramjsSession(value string) *GramjsSessionConstructor {
+	return &GramjsSessionConstructor{value: value}
+}
+
+func (s *GramjsSessionConstructor) Name(name string) *GramjsSessionConstructor {
+	s.name = name
+	return s
+}
+
+func (s *GramjsSessionConstructor) loadSession() (sessionName, []byte, error) {
+	sd, err := DecodeGramjsSession(s.value)
+		if err != nil {
+		return sessionNameString(s.name), nil, err
+	}
+	data, err := json.Marshal(jsonData{
+		Version: storage.LatestVersion,
+		Data:    *sd,
+	})
+	return sessionNameString(s.name), data, err
+}
