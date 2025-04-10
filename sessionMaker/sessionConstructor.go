@@ -3,6 +3,7 @@ package sessionMaker
 import (
 	"context"
 	"encoding/json"
+	"os"
 
 	"github.com/celestix/gotgproto/functions"
 	"github.com/celestix/gotgproto/storage"
@@ -173,7 +174,7 @@ func (s *GramjsSessionConstructor) Name(name string) *GramjsSessionConstructor {
 
 func (s *GramjsSessionConstructor) loadSession() (sessionName, []byte, error) {
 	sd, err := DecodeGramjsSession(s.value)
-		if err != nil {
+	if err != nil {
 		return sessionNameString(s.name), nil, err
 	}
 	data, err := json.Marshal(jsonData{
@@ -181,4 +182,22 @@ func (s *GramjsSessionConstructor) loadSession() (sessionName, []byte, error) {
 		Data:    *sd,
 	})
 	return sessionNameString(s.name), data, err
+}
+
+type JsonFileSessionConstructor struct {
+	name, filePath string
+}
+
+func JsonFileSession(filePath string) *JsonFileSessionConstructor {
+	return &JsonFileSessionConstructor{filePath: filePath}
+}
+
+func (s *JsonFileSessionConstructor) Name(name string) *JsonFileSessionConstructor {
+	s.name = name
+	return s
+}
+
+func (s *JsonFileSessionConstructor) loadSession() (sessionName, []byte, error) {
+	buf, err := os.ReadFile(s.filePath)
+	return sessionNameString(s.name), buf, err
 }
