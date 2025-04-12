@@ -79,6 +79,8 @@ type Client struct {
 	// NoAutoAuth is a flag to disable automatic authentication
 	// if the current session is invalid.
 	NoAutoAuth bool
+	// NoUpdates is a flag to disable updates.
+	NoUpdates bool
 
 	authConversator AuthConversator
 	clientType      clientType
@@ -172,6 +174,8 @@ type ClientOpts struct {
 	// NoAutoAuth is a flag to disable automatic authentication
 	// if the current session is invalid.
 	NoAutoAuth bool
+	// NoUpdates is a flag to disable updates.
+	NoUpdates bool
 }
 
 // NewClient creates a new gotgproto client and logs in to telegram.
@@ -218,6 +222,7 @@ func NewClient(appId int, apiHash string, cType clientType, opts *ClientOpts) (*
 		SystemLangCode:    opts.SystemLangCode,
 		ClientLangCode:    opts.ClientLangCode,
 		NoAutoAuth:        opts.NoAutoAuth,
+		NoUpdates:         opts.NoUpdates,
 		authConversator:   opts.AuthConversator,
 		Dispatcher:        d,
 		PeerStorage:       peerStorage,
@@ -262,6 +267,7 @@ func (c *Client) initTelegramClient(
 		DialTimeout:       c.DialTimeout,
 		CompressThreshold: c.CompressThreshold,
 		UpdateHandler:     c.Dispatcher,
+		NoUpdates:         c.NoUpdates,
 		SessionStorage:    c.sessionStorage,
 		Logger:            c.Logger,
 		Device:            *device,
