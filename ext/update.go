@@ -217,6 +217,13 @@ func (u *Update) EffectiveChat() types.EffectiveChat {
 }
 
 func (u *Update) fillUserIdFromMessage(selfUserId int64) {
+	if m := u.EffectiveMessage; m != nil && m.FromID != nil {
+		userPeer, ok := m.FromID.(*tg.PeerUser)
+		if ok {
+			u.userId = userPeer.UserID
+			return
+		}
+	}
 	if u.Entities != nil && u.Entities.Users != nil {
 		for uId := range u.Entities.Users {
 			if uId == selfUserId {
@@ -226,22 +233,4 @@ func (u *Update) fillUserIdFromMessage(selfUserId int64) {
 			break
 		}
 	}
-	// var userPeer tg.PeerClass
-	// switch _m := m.(type) {
-	// case *tg.Message:
-	// 	userPeer = _m.FromID
-	// case *tg.MessageService:
-	// 	userPeer = _m.FromID
-	// }
-	// uId, ok := userPeer.(*tg.PeerUser)
-	// if !ok {
-	// 	if u.Entities != nil && u.Entities.Users != nil {
-	// 		for uId := range u.Entities.Users {
-	// 			u.userId = uId
-	// 			break
-	// 		}
-	// 	}
-	// } else {
-	// 	u.userId = uId.UserID
-	// }
 }
