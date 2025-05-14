@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 
 	mtp_errors "github.com/celestix/gotgproto/errors"
@@ -19,6 +20,17 @@ import (
 	"github.com/gotd/td/telegram/message/styling"
 	"github.com/gotd/td/tg"
 )
+
+var (
+	mu     sync.Mutex
+	random = rand.New(rand.NewSource(time.Now().UnixNano()))
+)
+
+func SafeGenerateRandomID() int64 {
+	mu.Lock()
+	defer mu.Unlock()
+	return random.Int63()
+}
 
 // Context consists of context.Context, tg.Client, Self etc.
 type Context struct {
@@ -34,7 +46,6 @@ type Context struct {
 	context.Context
 
 	setReply    bool
-	random      *rand.Rand
 	PeerStorage *storage.PeerStorage
 }
 
@@ -46,14 +57,13 @@ func NewContext(ctx context.Context, client *tg.Client, peerStorage *storage.Pee
 		Self:        self,
 		Sender:      sender,
 		Entities:    entities,
-		random:      rand.New(rand.NewSource(time.Now().UnixNano())),
 		setReply:    setReply,
 		PeerStorage: peerStorage,
 	}
 }
 
 func (ctx *Context) generateRandomID() int64 {
-	return ctx.random.Int63()
+	return SafeGenerateRandomID()
 }
 
 // ReplyOpts object contains optional parameters for Context.Reply.
