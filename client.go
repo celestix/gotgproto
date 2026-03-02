@@ -426,7 +426,7 @@ func (c *Client) Start(opts *ClientOpts) error {
 			)
 		}
 
-		if c.err != nil {
+		if c.err != nil || c.ctx.Err() == context.Canceled {
 			wg.Done()
 		}
 	}(c)
@@ -434,6 +434,9 @@ func (c *Client) Start(opts *ClientOpts) error {
 	// wait till client starts
 	wg.Wait()
 	if c.err == nil {
+		if c.ctx.Err() == context.Canceled {
+			return errors.New("client stopped")
+		}
 		if !c.Self.Bot && opts.PeersFromDialogs {
 			if opts.WaitOnPeersFromDialogs {
 				storage.AddPeersFromDialogs(c.ctx, c.API(), c.PeerStorage)
