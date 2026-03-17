@@ -23,9 +23,9 @@ jobs:
       - name: Get Go environment
         id: go-env
         run: |
-          echo "cache=$(go env GOCACHE)" >> $GITHUB_OUTPUT
-          echo "modcache=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
-          echo "lintcache=$HOME/.cache/golangci-lint" >> $GITHUB_OUTPUT
+          echo "::set-output name=cache::$(go env GOCACHE)"
+          echo "::set-output name=modcache::$(go env GOMODCACHE)"
+          echo "::set-output name=lintcache::$HOME/.cache/golangci-lint"
       - name: Set up cache
         uses: actions/cache@v3
         with:
@@ -37,6 +37,8 @@ jobs:
           restore-keys: |
             lint-${{ runner.os }}-go-
       - name: Lint
+        env:
+          GOARCH: ${{ matrix.arch }}
         uses: golangci/golangci-lint-action@v6.1.1
         with:
           version: latest
