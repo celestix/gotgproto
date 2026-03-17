@@ -2,7 +2,7 @@ module github.com/celestix/gotgproto
 
 go 1.24.0
 
-toolchain go1.24.9
+toolchain go1.24.13
 
 require (
 	github.com/AnimeKaizoku/cacher v1.0.3-0.20250508132714-ddc7471efeef
@@ -15,6 +15,7 @@ require (
 )
 
 require (
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coder/websocket v1.8.14 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -29,6 +30,7 @@ require (
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/ogen-go/ogen v1.16.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/shopspring/decimal v1.4.0 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8 // indirect
 	golang.org/x/mod v0.32.0 // indirect

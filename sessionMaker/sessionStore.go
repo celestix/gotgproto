@@ -31,7 +31,7 @@ func (f *SessionStorage) LoadSession(_ context.Context) ([]byte, error) {
 	f.mux.Lock()
 	defer f.mux.Unlock()
 
-	return f.data, nil
+	return append([]byte(nil), f.data...), nil
 }
 
 // StoreSession stores session to sqlite storage.
@@ -42,9 +42,12 @@ func (f *SessionStorage) StoreSession(_ context.Context, data []byte) error {
 	f.mux.Lock()
 	defer f.mux.Unlock()
 
+	// Keep in-memory snapshot in sync so ExportStringSession sees latest data.
+	f.data = append([]byte(nil), data...)
+
 	f.peerStorage.UpdateSession(&storage.Session{
 		Version: storage.LatestVersion,
-		Data:    data,
+		Data:    append([]byte(nil), data...),
 	})
 	return nil
 }
