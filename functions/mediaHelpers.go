@@ -2,7 +2,8 @@ package functions
 
 import (
 	"fmt"
-	mtp_errors "github.com/celestix/gotgproto/errors"
+
+	mtperrors "github.com/celestix/gotgproto/errors"
 	"github.com/gotd/td/tg"
 )
 
@@ -13,7 +14,7 @@ func GetMediaFileNameWithId(media tg.MessageMediaClass) (string, error) {
 	case *tg.MessageMediaPhoto: // messageMediaPhoto#695150d7
 		f, ok := v.Photo.AsNotEmpty()
 		if !ok {
-			return "", mtp_errors.ErrUnknownTypeMedia
+			return "", mtperrors.ErrUnknownTypeMedia
 		}
 
 		return fmt.Sprintf("%d.png", f.ID), nil
@@ -28,7 +29,7 @@ func GetMediaFileNameWithId(media tg.MessageMediaClass) (string, error) {
 
 		f, ok = v.Document.AsNotEmpty()
 		if !ok {
-			return "", mtp_errors.ErrUnknownTypeMedia
+			return "", mtperrors.ErrUnknownTypeMedia
 		}
 
 		for _, attr = range f.Attributes {
@@ -42,11 +43,11 @@ func GetMediaFileNameWithId(media tg.MessageMediaClass) (string, error) {
 	case *tg.MessageMediaStory: // messageMediaStory#68cb6283
 		f, ok := v.Story.(*tg.StoryItem)
 		if !ok {
-			return "", mtp_errors.ErrUnknownTypeMedia
+			return "", mtperrors.ErrUnknownTypeMedia
 		}
 		return GetMediaFileNameWithId(f.Media)
 	}
-	return "", mtp_errors.ErrUnknownTypeMedia
+	return "", mtperrors.ErrUnknownTypeMedia
 }
 
 // GetMediaFileName
@@ -57,7 +58,7 @@ func GetMediaFileName(media tg.MessageMediaClass) (string, error) {
 	case *tg.MessageMediaPhoto: // messageMediaPhoto#695150d7
 		f, ok := v.Photo.AsNotEmpty()
 		if !ok {
-			return "", mtp_errors.ErrUnknownTypeMedia
+			return "", mtperrors.ErrUnknownTypeMedia
 		}
 
 		return fmt.Sprintf("%d.png", f.ID), nil
@@ -72,7 +73,7 @@ func GetMediaFileName(media tg.MessageMediaClass) (string, error) {
 
 		f, ok = v.Document.AsNotEmpty()
 		if !ok {
-			return "", mtp_errors.ErrUnknownTypeMedia
+			return "", mtperrors.ErrUnknownTypeMedia
 		}
 
 		for _, attr = range f.Attributes {
@@ -86,11 +87,11 @@ func GetMediaFileName(media tg.MessageMediaClass) (string, error) {
 	case *tg.MessageMediaStory: // messageMediaStory#68cb6283
 		f, ok := v.Story.(*tg.StoryItem)
 		if !ok {
-			return "", mtp_errors.ErrUnknownTypeMedia
+			return "", mtperrors.ErrUnknownTypeMedia
 		}
 		return GetMediaFileName(f.Media)
 	}
-	return "", mtp_errors.ErrUnknownTypeMedia
+	return "", mtperrors.ErrUnknownTypeMedia
 }
 
 // GetInputFileLocation
@@ -101,7 +102,7 @@ func GetInputFileLocation(media tg.MessageMediaClass) (tg.InputFileLocationClass
 	case *tg.MessageMediaPhoto: // messageMediaPhoto#695150d7
 		f, ok := v.Photo.AsNotEmpty()
 		if !ok {
-			return nil, mtp_errors.ErrUnknownTypeMedia
+			return nil, mtperrors.ErrUnknownTypeMedia
 		}
 		thumbSize := ""
 		if len(f.Sizes) > 1 {
@@ -118,15 +119,15 @@ func GetInputFileLocation(media tg.MessageMediaClass) (tg.InputFileLocationClass
 	case *tg.MessageMediaDocument: // messageMediaDocument#4cf4d72d
 		f, ok := v.Document.AsNotEmpty()
 		if !ok {
-			return nil, mtp_errors.ErrUnknownTypeMedia
+			return nil, mtperrors.ErrUnknownTypeMedia
 		}
-		return f.AsInputDocumentFileLocation(), nil
+		return f.AsInputDocumentFileLocation(""), nil
 	case *tg.MessageMediaStory: // messageMediaStory#68cb6283
 		f, ok := v.Story.(*tg.StoryItem)
 		if !ok {
-			return nil, mtp_errors.ErrUnknownTypeMedia
+			return nil, mtperrors.ErrUnknownTypeMedia
 		}
 		return GetInputFileLocation(f.Media)
 	}
-	return nil, mtp_errors.ErrUnknownTypeMedia
+	return nil, mtperrors.ErrUnknownTypeMedia
 }
