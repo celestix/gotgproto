@@ -15,6 +15,7 @@ linters:
     - ineffassign  # Detects unused variable assignments.
     - staticcheck  # Powerful linter (now integrates gosimple and stylecheck internally).
     - unused       # Detects unused variables, constants, functions, etc.
+    - copyloopvar  # Prevents loop variable reference bugs in concurrent processing (Go 1.22+).
 
   # Migration to v2: All linter configurations must reside under linters.settings
   settings:
