@@ -266,7 +266,8 @@ func (ctx *Context) SendInlineBotResult(chatID int64, request *tg.MessagesSendIn
 	return ctx.Raw.MessagesSendInlineBotResult(ctx, request)
 }
 
-// SendReaction invokes method messages.sendReaction#25690ce4 returning error if any.
+// SendReaction invokes messages.sendReaction. It returns a nil message when the
+// successful response does not contain a new message.
 func (ctx *Context) SendReaction(chatID int64, request *tg.MessagesSendReactionRequest) (*types.Message, error) {
 	var err error
 	if request == nil {
@@ -284,6 +285,9 @@ func (ctx *Context) SendReaction(chatID int64, request *tg.MessagesSendReactionR
 	message, err := functions.ReturnNewMessageWithError(m, u, ctx.PeerStorage, err)
 	if err != nil {
 		return nil, err
+	}
+	if message == nil {
+		return nil, nil
 	}
 	msg := types.ConstructMessage(message)
 	if ctx.setReply {
